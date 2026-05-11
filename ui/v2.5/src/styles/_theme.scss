@@ -1,44 +1,81 @@
-/* Blueprint dark theme */
+/* Modern dark theme */
 
-$secondary: #394b59;
-$muted-gray: #bfccd6;
-$success: #0f9960;
-$warning: #d9822b;
-$danger: #db3737;
+$secondary: #2c2c30;
+$muted-gray: #a1a1a6;
+$success: #30d158;
+$warning: #ff9f0a;
+$danger: #ff453a;
 
 $theme-colors: (
-  primary: #137cbd,
+  primary: #5b8def,
   secondary: $secondary,
   success: $success,
   warning: $warning,
   danger: $danger,
-  dark: #394b59,
+  dark: #2c2c30,
 );
 
-$body-bg: #202b33;
+$body-bg: #1a1a1d;
 $text-muted: $muted-gray;
-$link-color: #48aff0;
-$link-hover-color: $link-color;
-$text-color: #f5f8fa;
+$link-color: #7aa2f7;
+$link-hover-color: #9cbaff;
+$text-color: #f5f5f7;
 $pre-color: $text-color;
-$navbar-dark-color: rgb(245, 248, 250);
-$popover-bg: $secondary;
-$dark-text: #182026;
-$textfield-bg: rgba(16, 22, 26, 0.3);
-$card-bg: #30404d;
+$navbar-dark-color: #f5f5f7;
+$popover-bg: #2c2c30;
+$dark-text: #1a1a1d;
+$textfield-bg: #2c2c30;
+$card-bg: #242428;
 $card-cap-bg: rgba(#000, 0.03);
 
+// Bootstrap variable overrides — modernise radii and tighten focus rings
+$border-radius: 8px;
+$border-radius-sm: 6px;
+$border-radius-lg: 12px;
+$btn-border-radius: 8px;
+$btn-border-radius-sm: 6px;
+$btn-border-radius-lg: 10px;
+$input-btn-focus-width: 2px;
+$input-btn-focus-color: rgba(91, 141, 239, 0.35);
+$input-btn-focus-box-shadow: 0 0 0 $input-btn-focus-width
+  $input-btn-focus-color;
+$modal-content-border-radius: 14px;
+$dropdown-border-radius: 10px;
+$popover-border-radius: 10px;
+
 @import "bootstrap/scss/bootstrap";
+
+:root {
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.18);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.25),
+    0 16px 48px rgba(0, 0, 0, 0.32);
+  --surface-border: 1px solid rgba(255, 255, 255, 0.06);
+  --transition-fast: 0.15s ease;
+  --transition-med: 0.2s ease;
+}
 
 $red1: #a82a2a;
 $orange1: #a66321;
 $sepia1: #63411e;
-$dark-gray2: #202b33;
-$dark-gray5: #394b59;
+$dark-gray2: #1a1a1d;
+$dark-gray5: #2c2c30;
+
+.btn {
+  font-weight: 500;
+  transition: background-color var(--transition-fast),
+    border-color var(--transition-fast), color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
 
 .btn.active:not(.disabled),
 .btn.active.minimal:not(.disabled) {
-  background-color: rgba(138, 155, 168, 0.3);
+  background-color: rgba(255, 255, 255, 0.12);
   color: $text-color;
 }
 
@@ -46,8 +83,9 @@ a.minimal,
 button.minimal {
   background: none;
   border: none;
+  border-radius: var(--radius-sm);
   color: $text-color;
-  transition: none;
+  transition: background-color var(--transition-fast);
 
   &:disabled {
     background: none;
@@ -55,12 +93,12 @@ button.minimal {
   }
 
   &:hover:not(:disabled) {
-    background: rgba(138, 155, 168, 0.15);
+    background: rgba(255, 255, 255, 0.08);
     color: $text-color;
   }
 
   &:active:not(:disabled) {
-    background: rgba(138, 155, 168, 0.3);
+    background: rgba(255, 255, 255, 0.12);
     color: $text-color;
   }
 }
@@ -108,7 +146,7 @@ hr {
 }
 
 .table-striped tr:nth-child(odd) td {
-  background: rgba(92, 112, 128, 0.15);
+  background: transparent;
 }
 
 .table {
@@ -117,16 +155,29 @@ hr {
 
   thead {
     th {
-      border-bottom: 1px solid #414c53;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       border-right: none;
       border-top: none;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 0.625rem 0.75rem;
+      text-transform: uppercase;
+    }
+  }
+
+  tbody tr {
+    transition: background-color var(--transition-fast);
+
+    &:hover td {
+      background-color: rgba(255, 255, 255, 0.04);
     }
   }
 
   td {
     border: none;
-    border-color: #414c53;
-    padding: 0.25rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0.625rem 0.75rem;
+    vertical-align: middle;
   }
 }
 

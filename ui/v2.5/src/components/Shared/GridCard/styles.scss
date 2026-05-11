@@ -1,4 +1,7 @@
 .grid-card {
+  transition: transform var(--transition-med),
+    box-shadow var(--transition-med);
+
   a {
     color: $text-color;
     text-decoration: none;
@@ -10,6 +13,9 @@
 
   &:hover,
   &:active {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+
     .rating-banner,
     .studio-overlay {
       opacity: 0;

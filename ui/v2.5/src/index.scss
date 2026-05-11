@@ -1,7 +1,7 @@
 // variables required by other scss files
 
 // this is calculated from the existing height
-$navbar-height: 48.75px;
+$navbar-height: 56px;
 
 $sticky-detail-header-height: 50px;
 
@@ -46,11 +46,15 @@ $sidebar-width: 250px;
 /* stylelint-enable */
 
 html {
-  font-size: 14px;
+  font-size: 15px;
 }
 
 body {
   color: $text-color;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  letter-spacing: -0.005em;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
   margin: 0;
@@ -141,16 +145,16 @@ dd {
   .btn-primary:not(:disabled):not(.disabled).active,
   .show > .btn-primary.dropdown-toggle,
   .btn-primary:hover {
-    background: rgba(138, 155, 168, 0.15);
-    background-color: rgba(138, 155, 168, 0.15);
-    border-color: rgba(138, 155, 168, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.08);
     box-shadow: unset;
-    color: #f5f8fa;
+    color: $text-color;
   }
 }
 
 .detail-header {
-  background-color: #192127;
+  background-color: #141416;
   min-height: 15rem;
   overflow: hidden;
   padding: 1rem;
@@ -268,7 +272,7 @@ dd {
 
   nav {
     align-content: center;
-    border-bottom: solid 2px #192127;
+    border-bottom: solid 1px rgba(255, 255, 255, 0.06);
     display: flex;
     justify-content: center;
     margin: 0;
@@ -466,17 +470,18 @@ dd {
 
 .input-control,
 .text-input {
-  border: 0;
-  box-shadow: 0 0 0 0 rgba(19, 124, 189, 0), 0 0 0 0 rgba(19, 124, 189, 0),
-    0 0 0 0 rgba(19, 124, 189, 0), inset 0 0 0 1px rgba(16, 22, 26, 0.3),
-    inset 0 1px 1px rgba(16, 22, 26, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
   color: $text-color;
+  min-height: 36px;
+  padding: 0.375rem 0.625rem;
+  transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 
   &:focus {
-    border: 0;
-    box-shadow: 0 0 0 1px $primary, 0 0 0 1px $primary,
-      0 0 0 3px rgba(19, 124, 189, 0.3), inset 0 0 0 1px rgba(16, 22, 26, 0.3),
-      inset 0 1px 1px rgba(16, 22, 26, 0.4);
+    border-color: $primary;
+    box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.3);
     color: $text-color;
   }
 }
@@ -488,7 +493,7 @@ dd {
 }
 
 .input-control:disabled {
-  opacity: 0.8;
+  opacity: 0.6;
 }
 
 .text-input,
@@ -501,7 +506,7 @@ dd {
 textarea.text-input {
   line-height: 2.5ex;
   min-height: 12ex;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 /* stylelint-disable declaration-no-important */
@@ -617,10 +622,19 @@ textarea.text-input {
 
 div.react-select__control {
   background-color: $secondary;
-  border-color: $secondary;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
   color: $text-color;
   cursor: pointer;
+  min-height: 36px;
+  transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
   white-space: nowrap;
+
+  &--is-focused {
+    border-color: $primary;
+    box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.3);
+  }
 
   .react-select__single-value,
   .react-select__input-container {
@@ -628,8 +642,22 @@ div.react-select__control {
   }
 
   .react-select__multi-value {
-    background-color: $muted-gray;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-pill);
     color: $text-color;
+    padding: 0 4px;
+
+    .react-select__multi-value__label {
+      color: $text-color;
+    }
+
+    .react-select__multi-value__remove {
+      border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+      }
+    }
   }
 }
 
@@ -650,7 +678,7 @@ div.dropdown-menu {
   .react-select__option--is-focused,
   .dropdown-item:focus,
   .dropdown-item:hover {
-    background-color: #8a9ba826;
+    background-color: rgba(255, 255, 255, 0.08);
     cursor: pointer;
   }
 }
@@ -706,25 +734,29 @@ div.dropdown-menu {
 
 .tag-item {
   align-items: center;
-  background-color: $muted-gray;
-  color: $dark-text;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
+  color: $text-color;
   display: inline-flex;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 16px;
-  margin: 5px;
-  padding: 2px 6px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  margin: 4px;
+  padding: 3px 10px;
+  transition: background-color var(--transition-fast);
 
   // if link, move padding to link to make full tag clickable
   &.tag-link {
     padding: 0;
 
     a {
-      padding: 2px 6px;
+      border-radius: var(--radius-pill);
+      padding: 3px 10px;
     }
   }
 
   &:hover {
+    background-color: rgba(255, 255, 255, 0.13);
     cursor: pointer;
   }
 
@@ -735,13 +767,13 @@ div.dropdown-menu {
   .btn {
     background: none;
     border: none;
-    bottom: 2px;
-    color: $dark-text;
+    bottom: 0;
+    color: $text-color;
     font-size: 12px;
     line-height: 16px;
-    margin-right: -0.5rem;
+    margin-right: -0.25rem;
     opacity: 0.5;
-    padding: 0 0.5rem;
+    padding: 0 0.4rem;
 
     &:active,
     &:hover {
@@ -896,10 +928,9 @@ div.dropdown-menu {
 
 .card {
   background-color: $card-bg;
-  border-radius: 3px;
-  box-shadow: 0 0 0 1px rgba(16, 22, 26, 0.4), 0 0 0 rgba(16, 22, 26, 0),
-    0 0 0 rgba(16, 22, 26, 0);
-  padding: 20px;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  padding: 14px;
 }
 
 .toast-container {
@@ -1035,8 +1066,26 @@ div.dropdown-menu {
 }
 
 .top-nav {
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   justify-content: start;
-  padding: 0.25rem 1rem;
+  padding: 0.25rem 1.25rem;
+
+  // override Bootstrap's bg-dark — mostly opaque to match body, hint of
+  // translucency so backdrop-filter still picks up content scrolling under
+  &.bg-dark {
+    background-color: rgba(26, 26, 29, 0.88) !important;
+  }
+
+  // Navbar.Collapse also has bg-dark which would paint a lighter layer on
+  // top of our navbar bg. Make it transparent on xl+ where the collapse is
+  // inline; below xl, leave it opaque so the mobile dropdown stays readable.
+  @include media-breakpoint-up(xl) {
+    .navbar-collapse.bg-dark {
+      background-color: transparent !important;
+    }
+  }
 
   @include media-breakpoint-down(xs) {
     padding: 0.25rem 2rem;
