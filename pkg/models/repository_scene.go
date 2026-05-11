@@ -88,6 +88,17 @@ type ODateReader interface {
 	GetManyODates(ctx context.Context, ids []int) ([][]time.Time, error)
 }
 
+// SceneRelationBulkLoader exposes bulk relationship lookups for scenes, used by request-scoped
+// dataloaders to collapse N+1 queries when GraphQL clients select joined fields on scene lists.
+type SceneRelationBulkLoader interface {
+	GetManyTagIDs(ctx context.Context, ids []int) ([][]int, error)
+	GetManyPerformerIDs(ctx context.Context, ids []int) ([][]int, error)
+	GetManyGalleryIDs(ctx context.Context, ids []int) ([][]int, error)
+	GetManyURLs(ctx context.Context, ids []int) ([][]string, error)
+	GetManyStashIDs(ctx context.Context, ids []int) ([][]StashID, error)
+	GetManyGroups(ctx context.Context, ids []int) ([][]GroupsScenes, error)
+}
+
 // SceneReader provides all methods to read scenes.
 type SceneReader interface {
 	SceneFinder
@@ -105,6 +116,7 @@ type SceneReader interface {
 	StashIDLoader
 	VideoFileLoader
 	CustomFieldsReader
+	SceneRelationBulkLoader
 
 	All(ctx context.Context) ([]*Scene, error)
 	Wall(ctx context.Context, q *string) ([]*Scene, error)

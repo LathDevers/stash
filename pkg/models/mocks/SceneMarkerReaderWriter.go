@@ -176,6 +176,29 @@ func (_m *SceneMarkerReaderWriter) FindMany(ctx context.Context, ids []int) ([]*
 	return r0, r1
 }
 
+// FindManyBySceneIDs provides a mock function with given fields: ctx, sceneIDs
+func (_m *SceneMarkerReaderWriter) FindManyBySceneIDs(ctx context.Context, sceneIDs []int) ([][]*models.SceneMarker, error) {
+	ret := _m.Called(ctx, sceneIDs)
+
+	var r0 [][]*models.SceneMarker
+	if rf, ok := ret.Get(0).(func(context.Context, []int) [][]*models.SceneMarker); ok {
+		r0 = rf(ctx, sceneIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([][]*models.SceneMarker)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, []int) error); ok {
+		r1 = rf(ctx, sceneIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetMarkerStrings provides a mock function with given fields: ctx, q, sort
 func (_m *SceneMarkerReaderWriter) GetMarkerStrings(ctx context.Context, q *string, sort *string) ([]*models.MarkerStringsResultType, error) {
 	ret := _m.Called(ctx, q, sort)

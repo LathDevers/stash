@@ -324,6 +324,48 @@ func (t *stashIDTable) get(ctx context.Context, id int) ([]models.StashID, error
 	return ret, nil
 }
 
+// getMany returns the stash IDs for each input parent id, in the same order as ids.
+// Used to back the per-entity stash-id dataloader.
+func (t *stashIDTable) getMany(ctx context.Context, ids []int) ([][]models.StashID, error) {
+	ret := make([][]models.StashID, len(ids))
+	for i := range ret {
+		ret[i] = []models.StashID{}
+	}
+	if len(ids) == 0 {
+		return ret, nil
+	}
+
+	idVals := make([]interface{}, len(ids))
+	for i, id := range ids {
+		idVals[i] = id
+	}
+
+	q := dialect.Select(t.idColumn.As("relation_id"), goqu.C("endpoint"), goqu.C("stash_id"), goqu.C("updated_at")).
+		From(t.table.table).
+		Where(t.idColumn.In(idVals...))
+
+	type bulkRow struct {
+		RelationID int `db:"relation_id"`
+		stashIDRow
+	}
+
+	idx := idToIndexMap(ids)
+	if err := queryFunc(ctx, q, false, func(rows *sqlx.Rows) error {
+		var v bulkRow
+		if err := rows.StructScan(&v); err != nil {
+			return err
+		}
+		if i, ok := idx[v.RelationID]; ok {
+			ret[i] = append(ret[i], v.stashIDRow.resolve())
+		}
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("getting stash ids from %s: %w", t.table.table.GetTable(), err)
+	}
+
+	return ret, nil
+}
+
 var epochTime = time.Unix(0, 0).UTC()
 
 func (t *stashIDTable) insertJoin(ctx context.Context, id int, v models.StashID) (sql.Result, error) {
@@ -539,6 +581,49 @@ func (t *orderedValueTable[T]) get(ctx context.Context, id int) ([]T, error) {
 	return ret, nil
 }
 
+// getMany returns the ordered values for each input parent id, in the same order as ids.
+// Each per-id list is sorted by the position column.
+func (t *orderedValueTable[T]) getMany(ctx context.Context, ids []int) ([][]T, error) {
+	ret := make([][]T, len(ids))
+	for i := range ret {
+		ret[i] = []T{}
+	}
+	if len(ids) == 0 {
+		return ret, nil
+	}
+
+	idVals := make([]interface{}, len(ids))
+	for i, id := range ids {
+		idVals[i] = id
+	}
+
+	q := dialect.Select(t.idColumn.As("relation_id"), t.valueColumn.As("value")).
+		From(t.table.table).
+		Where(t.idColumn.In(idVals...)).
+		Order(t.idColumn.Asc(), t.positionColumn().Asc())
+
+	type bulkRow struct {
+		RelationID int `db:"relation_id"`
+		Value      T   `db:"value"`
+	}
+
+	idx := idToIndexMap(ids)
+	if err := queryFunc(ctx, q, false, func(rows *sqlx.Rows) error {
+		var v bulkRow
+		if err := rows.StructScan(&v); err != nil {
+			return err
+		}
+		if i, ok := idx[v.RelationID]; ok {
+			ret[i] = append(ret[i], v.Value)
+		}
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("getting ordered values from %s: %w", t.table.table.GetTable(), err)
+	}
+
+	return ret, nil
+}
+
 func (t *orderedValueTable[T]) insertJoin(ctx context.Context, id int, position int, v T) (sql.Result, error) {
 	q := dialect.Insert(t.table.table).Cols(t.idColumn.GetCol(), t.positionColumn().GetCol(), t.valueColumn.GetCol()).Vals(
 		goqu.Vals{id, position, v},
@@ -645,6 +730,44 @@ func (t *scenesGroupsTable) get(ctx context.Context, id int) ([]models.GroupsSce
 
 		ret = append(ret, v.resolve(id))
 
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("getting scene groups from %s: %w", t.table.table.GetTable(), err)
+	}
+
+	return ret, nil
+}
+
+// getMany returns the GroupsScenes rows for each input scene id, in the same order as ids.
+// Per-id slots are non-nil empty when the scene has no groups, matching the singular get().
+func (t *scenesGroupsTable) getMany(ctx context.Context, ids []int) ([][]models.GroupsScenes, error) {
+	ret := make([][]models.GroupsScenes, len(ids))
+	for i := range ret {
+		ret[i] = []models.GroupsScenes{}
+	}
+	if len(ids) == 0 {
+		return ret, nil
+	}
+
+	idVals := make([]interface{}, len(ids))
+	for i, id := range ids {
+		idVals[i] = id
+	}
+
+	q := dialect.Select("scene_id", "group_id", "scene_index").
+		From(t.table.table).
+		Where(t.idColumn.In(idVals...))
+
+	idx := idToIndexMap(ids)
+	if err := queryFunc(ctx, q, false, func(rows *sqlx.Rows) error {
+		var v groupsScenesRow
+		if err := rows.StructScan(&v); err != nil {
+			return err
+		}
+		sceneID := int(v.SceneID.Int64)
+		if i, ok := idx[sceneID]; ok {
+			ret[i] = append(ret[i], v.resolve(sceneID))
+		}
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("getting scene groups from %s: %w", t.table.table.GetTable(), err)

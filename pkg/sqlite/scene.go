@@ -1430,6 +1430,38 @@ func (qb *SceneStore) GetStashIDs(ctx context.Context, sceneID int) ([]models.St
 	return sceneRepository.stashIDs.get(ctx, sceneID)
 }
 
+// GetManyTagIDs returns the tag IDs for each input scene ID, ordered to match ids.
+// Backs the per-request dataloader that collapses N+1 lookups for the `tags` resolver.
+func (qb *SceneStore) GetManyTagIDs(ctx context.Context, ids []int) ([][]int, error) {
+	return sceneRepository.tags.getManyIDs(ctx, ids)
+}
+
+// GetManyPerformerIDs returns the performer IDs for each input scene ID, ordered to match ids.
+func (qb *SceneStore) GetManyPerformerIDs(ctx context.Context, ids []int) ([][]int, error) {
+	return sceneRepository.performers.getManyIDs(ctx, ids)
+}
+
+// GetManyGalleryIDs returns the gallery IDs for each input scene ID, ordered to match ids.
+func (qb *SceneStore) GetManyGalleryIDs(ctx context.Context, ids []int) ([][]int, error) {
+	return sceneRepository.galleries.getManyIDs(ctx, ids)
+}
+
+// GetManyURLs returns the URL list for each input scene ID, ordered to match ids.
+// Each per-scene list preserves position order.
+func (qb *SceneStore) GetManyURLs(ctx context.Context, ids []int) ([][]string, error) {
+	return scenesURLsTableMgr.getMany(ctx, ids)
+}
+
+// GetManyStashIDs returns the stash IDs for each input scene ID, ordered to match ids.
+func (qb *SceneStore) GetManyStashIDs(ctx context.Context, ids []int) ([][]models.StashID, error) {
+	return scenesStashIDsTableMgr.getMany(ctx, ids)
+}
+
+// GetManyGroups returns the GroupsScenes rows for each input scene ID, ordered to match ids.
+func (qb *SceneStore) GetManyGroups(ctx context.Context, ids []int) ([][]models.GroupsScenes, error) {
+	return scenesGroupsTableMgr.getMany(ctx, ids)
+}
+
 func (qb *SceneStore) FindDuplicates(ctx context.Context, distance int, durationDiff float64) ([][]*models.Scene, error) {
 	var dupeIds [][]int
 	if distance == 0 {

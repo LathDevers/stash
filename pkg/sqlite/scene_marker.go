@@ -275,6 +275,43 @@ func (qb *SceneMarkerStore) FindBySceneID(ctx context.Context, sceneID int) ([]*
 	return qb.querySceneMarkers(ctx, query, args)
 }
 
+// FindManyBySceneIDs returns the scene markers grouped by input scene id, in the same order as sceneIDs.
+// Backs the dataloader that collapses N+1 lookups for the `scene_markers` resolver.
+func (qb *SceneMarkerStore) FindManyBySceneIDs(ctx context.Context, sceneIDs []int) ([][]*models.SceneMarker, error) {
+	ret := make([][]*models.SceneMarker, len(sceneIDs))
+	if len(sceneIDs) == 0 {
+		return ret, nil
+	}
+
+	query := fmt.Sprintf(`
+		SELECT scene_markers.* FROM scene_markers
+		WHERE scene_markers.scene_id IN %s
+		ORDER BY scene_markers.scene_id ASC, scene_markers.seconds ASC
+	`, getInBinding(len(sceneIDs)))
+
+	args := make([]interface{}, len(sceneIDs))
+	for i, id := range sceneIDs {
+		args[i] = id
+	}
+
+	idx := idToIndexMap(sceneIDs)
+	err := sceneMarkerRepository.queryFunc(ctx, query, args, false, func(r *sqlx.Rows) error {
+		var f sceneMarkerRow
+		if err := r.StructScan(&f); err != nil {
+			return err
+		}
+		marker := f.resolve()
+		if i, ok := idx[marker.SceneID]; ok {
+			ret[i] = append(ret[i], marker)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
 func (qb *SceneMarkerStore) CountByTagID(ctx context.Context, tagID int) (int, error) {
 	args := []interface{}{tagID, tagID}
 	return sceneMarkerRepository.runCountQuery(ctx, sceneMarkerRepository.buildCountQuery(countSceneMarkersForTagQuery), args)

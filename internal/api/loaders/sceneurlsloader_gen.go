@@ -5,14 +5,12 @@ package loaders
 import (
 	"sync"
 	"time"
-
-	"github.com/stashapp/stash/pkg/models"
 )
 
-// FolderRelatedFolderIDsLoaderConfig captures the config to create a new FolderRelatedFolderIDsLoader
-type FolderRelatedFolderIDsLoaderConfig struct {
+// SceneURLsLoaderConfig captures the config to create a new SceneURLsLoader
+type SceneURLsLoaderConfig struct {
 	// Fetch is a method that provides the data for the loader
-	Fetch func(keys []models.FolderID) ([][]models.FolderID, []error)
+	Fetch func(keys []int) ([][]string, []error)
 
 	// Wait is how long wait before sending a batch
 	Wait time.Duration
@@ -21,19 +19,19 @@ type FolderRelatedFolderIDsLoaderConfig struct {
 	MaxBatch int
 }
 
-// NewFolderRelatedFolderIDsLoader creates a new FolderRelatedFolderIDsLoader given a fetch, wait, and maxBatch
-func NewFolderRelatedFolderIDsLoader(config FolderRelatedFolderIDsLoaderConfig) *FolderRelatedFolderIDsLoader {
-	return &FolderRelatedFolderIDsLoader{
+// NewSceneURLsLoader creates a new SceneURLsLoader given a fetch, wait, and maxBatch
+func NewSceneURLsLoader(config SceneURLsLoaderConfig) *SceneURLsLoader {
+	return &SceneURLsLoader{
 		fetch:    config.Fetch,
 		wait:     config.Wait,
 		maxBatch: config.MaxBatch,
 	}
 }
 
-// FolderRelatedFolderIDsLoader batches and caches requests
-type FolderRelatedFolderIDsLoader struct {
+// SceneURLsLoader batches and caches requests
+type SceneURLsLoader struct {
 	// this method provides the data for the loader
-	fetch func(keys []models.FolderID) ([][]models.FolderID, []error)
+	fetch func(keys []int) ([][]string, []error)
 
 	// how long to done before sending a batch
 	wait time.Duration
@@ -44,51 +42,51 @@ type FolderRelatedFolderIDsLoader struct {
 	// INTERNAL
 
 	// lazily created cache
-	cache map[models.FolderID][]models.FolderID
+	cache map[int][]string
 
 	// the current batch. keys will continue to be collected until timeout is hit,
 	// then everything will be sent to the fetch method and out to the listeners
-	batch *folderRelatedFolderIDsLoaderBatch
+	batch *sceneURLsLoaderBatch
 
 	// mutex to prevent races
 	mu sync.Mutex
 }
 
-type folderRelatedFolderIDsLoaderBatch struct {
-	keys    []models.FolderID
-	data    [][]models.FolderID
+type sceneURLsLoaderBatch struct {
+	keys    []int
+	data    [][]string
 	error   []error
 	closing bool
 	done    chan struct{}
 }
 
-// Load a FolderID by key, batching and caching will be applied automatically
-func (l *FolderRelatedFolderIDsLoader) Load(key models.FolderID) ([]models.FolderID, error) {
+// Load a string by key, batching and caching will be applied automatically
+func (l *SceneURLsLoader) Load(key int) ([]string, error) {
 	return l.LoadThunk(key)()
 }
 
-// LoadThunk returns a function that when called will block waiting for a FolderID.
+// LoadThunk returns a function that when called will block waiting for a string.
 // This method should be used if you want one goroutine to make requests to many
 // different data loaders without blocking until the thunk is called.
-func (l *FolderRelatedFolderIDsLoader) LoadThunk(key models.FolderID) func() ([]models.FolderID, error) {
+func (l *SceneURLsLoader) LoadThunk(key int) func() ([]string, error) {
 	l.mu.Lock()
 	if it, ok := l.cache[key]; ok {
 		l.mu.Unlock()
-		return func() ([]models.FolderID, error) {
+		return func() ([]string, error) {
 			return it, nil
 		}
 	}
 	if l.batch == nil {
-		l.batch = &folderRelatedFolderIDsLoaderBatch{done: make(chan struct{})}
+		l.batch = &sceneURLsLoaderBatch{done: make(chan struct{})}
 	}
 	batch := l.batch
 	pos := batch.keyIndex(l, key)
 	l.mu.Unlock()
 
-	return func() ([]models.FolderID, error) {
+	return func() ([]string, error) {
 		<-batch.done
 
-		var data []models.FolderID
+		var data []string
 		if pos < len(batch.data) {
 			data = batch.data[pos]
 		}
@@ -113,49 +111,49 @@ func (l *FolderRelatedFolderIDsLoader) LoadThunk(key models.FolderID) func() ([]
 
 // LoadAll fetches many keys at once. It will be broken into appropriate sized
 // sub batches depending on how the loader is configured
-func (l *FolderRelatedFolderIDsLoader) LoadAll(keys []models.FolderID) ([][]models.FolderID, []error) {
-	results := make([]func() ([]models.FolderID, error), len(keys))
+func (l *SceneURLsLoader) LoadAll(keys []int) ([][]string, []error) {
+	results := make([]func() ([]string, error), len(keys))
 
 	for i, key := range keys {
 		results[i] = l.LoadThunk(key)
 	}
 
-	folderIDs := make([][]models.FolderID, len(keys))
+	strings := make([][]string, len(keys))
 	errors := make([]error, len(keys))
 	for i, thunk := range results {
-		folderIDs[i], errors[i] = thunk()
+		strings[i], errors[i] = thunk()
 	}
-	return folderIDs, errors
+	return strings, errors
 }
 
-// LoadAllThunk returns a function that when called will block waiting for a FolderIDs.
+// LoadAllThunk returns a function that when called will block waiting for a strings.
 // This method should be used if you want one goroutine to make requests to many
 // different data loaders without blocking until the thunk is called.
-func (l *FolderRelatedFolderIDsLoader) LoadAllThunk(keys []models.FolderID) func() ([][]models.FolderID, []error) {
-	results := make([]func() ([]models.FolderID, error), len(keys))
+func (l *SceneURLsLoader) LoadAllThunk(keys []int) func() ([][]string, []error) {
+	results := make([]func() ([]string, error), len(keys))
 	for i, key := range keys {
 		results[i] = l.LoadThunk(key)
 	}
-	return func() ([][]models.FolderID, []error) {
-		folderIDs := make([][]models.FolderID, len(keys))
+	return func() ([][]string, []error) {
+		strings := make([][]string, len(keys))
 		errors := make([]error, len(keys))
 		for i, thunk := range results {
-			folderIDs[i], errors[i] = thunk()
+			strings[i], errors[i] = thunk()
 		}
-		return folderIDs, errors
+		return strings, errors
 	}
 }
 
 // Prime the cache with the provided key and value. If the key already exists, no change is made
 // and false is returned.
 // (To forcefully prime the cache, clear the key first with loader.clear(key).prime(key, value).)
-func (l *FolderRelatedFolderIDsLoader) Prime(key models.FolderID, value []models.FolderID) bool {
+func (l *SceneURLsLoader) Prime(key int, value []string) bool {
 	l.mu.Lock()
 	var found bool
 	if _, found = l.cache[key]; !found {
 		// make a copy when writing to the cache, its easy to pass a pointer in from a loop var
 		// and end up with the whole cache pointing to the same value.
-		cpy := make([]models.FolderID, len(value))
+		cpy := make([]string, len(value))
 		copy(cpy, value)
 		l.unsafeSet(key, cpy)
 	}
@@ -164,22 +162,22 @@ func (l *FolderRelatedFolderIDsLoader) Prime(key models.FolderID, value []models
 }
 
 // Clear the value at key from the cache, if it exists
-func (l *FolderRelatedFolderIDsLoader) Clear(key models.FolderID) {
+func (l *SceneURLsLoader) Clear(key int) {
 	l.mu.Lock()
 	delete(l.cache, key)
 	l.mu.Unlock()
 }
 
-func (l *FolderRelatedFolderIDsLoader) unsafeSet(key models.FolderID, value []models.FolderID) {
+func (l *SceneURLsLoader) unsafeSet(key int, value []string) {
 	if l.cache == nil {
-		l.cache = map[models.FolderID][]models.FolderID{}
+		l.cache = map[int][]string{}
 	}
 	l.cache[key] = value
 }
 
 // keyIndex will return the location of the key in the batch, if its not found
 // it will add the key to the batch
-func (b *folderRelatedFolderIDsLoaderBatch) keyIndex(l *FolderRelatedFolderIDsLoader, key models.FolderID) int {
+func (b *sceneURLsLoaderBatch) keyIndex(l *SceneURLsLoader, key int) int {
 	for i, existingKey := range b.keys {
 		if key == existingKey {
 			return i
@@ -203,7 +201,7 @@ func (b *folderRelatedFolderIDsLoaderBatch) keyIndex(l *FolderRelatedFolderIDsLo
 	return pos
 }
 
-func (b *folderRelatedFolderIDsLoaderBatch) startTimer(l *FolderRelatedFolderIDsLoader) {
+func (b *sceneURLsLoaderBatch) startTimer(l *SceneURLsLoader) {
 	time.Sleep(l.wait)
 	l.mu.Lock()
 
@@ -219,7 +217,7 @@ func (b *folderRelatedFolderIDsLoaderBatch) startTimer(l *FolderRelatedFolderIDs
 	b.end(l)
 }
 
-func (b *folderRelatedFolderIDsLoaderBatch) end(l *FolderRelatedFolderIDsLoader) {
+func (b *sceneURLsLoaderBatch) end(l *SceneURLsLoader) {
 	b.data, b.error = l.fetch(b.keys)
 	close(b.done)
 }

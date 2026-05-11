@@ -257,6 +257,63 @@ func (r *joinRepository) getIDs(ctx context.Context, id int) ([]int, error) {
 	return r.runIdsQuery(ctx, query, []interface{}{id})
 }
 
+// getManyIDs returns the foreign IDs for each input parent id, in the same order as ids.
+// Used to back dataloaders for tag/performer/gallery relationships.
+func (r *joinRepository) getManyIDs(ctx context.Context, ids []int) ([][]int, error) {
+	ret := make([][]int, len(ids))
+	for i := range ret {
+		ret[i] = []int{}
+	}
+	if len(ids) == 0 {
+		return ret, nil
+	}
+
+	var joinStr string
+	if r.foreignTable != "" {
+		joinStr = fmt.Sprintf(" INNER JOIN %s ON %[1]s.id = %s.%s", r.foreignTable, r.tableName, r.fkColumn)
+	}
+
+	query := fmt.Sprintf(
+		"SELECT %[1]s.%[2]s as parent_id, %[1]s.%[3]s as fk_id FROM %[1]s%[4]s WHERE %[1]s.%[2]s IN %[5]s",
+		r.tableName, r.idColumn, r.fkColumn, joinStr, getInBinding(len(ids)),
+	)
+
+	// Preserve the foreign-table ordering when configured, otherwise group rows by parent
+	// to keep output deterministic.
+	if r.orderBy != "" {
+		query += " ORDER BY " + r.tableName + "." + r.idColumn + ", " + r.orderBy
+	} else {
+		query += " ORDER BY " + r.tableName + "." + r.idColumn
+	}
+
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		args[i] = id
+	}
+
+	type joinRow struct {
+		ParentID int `db:"parent_id"`
+		FKID     int `db:"fk_id"`
+	}
+
+	idx := idToIndexMap(ids)
+	err := r.queryFunc(ctx, query, args, false, func(rows *sqlx.Rows) error {
+		var row joinRow
+		if err := rows.StructScan(&row); err != nil {
+			return err
+		}
+		if i, ok := idx[row.ParentID]; ok {
+			ret[i] = append(ret[i], row.FKID)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
+}
+
 func (r *joinRepository) insert(ctx context.Context, id int, foreignIDs ...int) error {
 	stmt, err := dbWrapper.Prepare(ctx, fmt.Sprintf("INSERT INTO %s (%s, %s) VALUES (?, ?)", r.tableName, r.idColumn, r.fkColumn))
 	if err != nil {

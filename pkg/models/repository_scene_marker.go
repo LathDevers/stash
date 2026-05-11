@@ -13,6 +13,9 @@ type SceneMarkerGetter interface {
 type SceneMarkerFinder interface {
 	SceneMarkerGetter
 	FindBySceneID(ctx context.Context, sceneID int) ([]*SceneMarker, error)
+	// FindManyBySceneIDs returns markers grouped per scene id, in the same order as sceneIDs.
+	// Used by the per-request dataloader for the `scene_markers` resolver.
+	FindManyBySceneIDs(ctx context.Context, sceneIDs []int) ([][]*SceneMarker, error)
 }
 
 // SceneMarkerQueryer provides methods to query scene markers.

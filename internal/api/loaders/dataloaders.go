@@ -21,6 +21,13 @@
 //go:generate go run github.com/vektah/dataloaden SceneOHistoryLoader int []time.Time
 //go:generate go run github.com/vektah/dataloaden ScenePlayHistoryLoader int []time.Time
 //go:generate go run github.com/vektah/dataloaden SceneLastPlayedLoader int *time.Time
+//go:generate go run github.com/vektah/dataloaden SceneTagIDsLoader int []int
+//go:generate go run github.com/vektah/dataloaden ScenePerformerIDsLoader int []int
+//go:generate go run github.com/vektah/dataloaden SceneGalleryIDsLoader int []int
+//go:generate go run github.com/vektah/dataloaden SceneURLsLoader int []string
+//go:generate go run github.com/vektah/dataloaden SceneStashIDsLoader int []github.com/stashapp/stash/pkg/models.StashID
+//go:generate go run github.com/vektah/dataloaden SceneGroupsLoader int []github.com/stashapp/stash/pkg/models.GroupsScenes
+//go:generate go run github.com/vektah/dataloaden SceneMarkersLoader int []*github.com/stashapp/stash/pkg/models.SceneMarker
 package loaders
 
 import (
@@ -51,6 +58,13 @@ type Loaders struct {
 	SceneOHistory     *SceneOHistoryLoader
 	SceneLastPlayed   *SceneLastPlayedLoader
 	SceneCustomFields *CustomFieldsLoader
+	SceneTagIDs       *SceneTagIDsLoader
+	ScenePerformerIDs *ScenePerformerIDsLoader
+	SceneGalleryIDs   *SceneGalleryIDsLoader
+	SceneURLs         *SceneURLsLoader
+	SceneStashIDs     *SceneStashIDsLoader
+	SceneGroups       *SceneGroupsLoader
+	SceneMarkers      *SceneMarkersLoader
 
 	ImageFiles   *ImageFileIDsLoader
 	GalleryFiles *GalleryFileIDsLoader
@@ -216,6 +230,41 @@ func (m Middleware) Middleware(next http.Handler) http.Handler {
 				wait:     wait,
 				maxBatch: maxBatch,
 				fetch:    m.fetchScenesOHistory(ctx),
+			},
+			SceneTagIDs: &SceneTagIDsLoader{
+				wait:     wait,
+				maxBatch: maxBatch,
+				fetch:    m.fetchScenesTagIDs(ctx),
+			},
+			ScenePerformerIDs: &ScenePerformerIDsLoader{
+				wait:     wait,
+				maxBatch: maxBatch,
+				fetch:    m.fetchScenesPerformerIDs(ctx),
+			},
+			SceneGalleryIDs: &SceneGalleryIDsLoader{
+				wait:     wait,
+				maxBatch: maxBatch,
+				fetch:    m.fetchScenesGalleryIDs(ctx),
+			},
+			SceneURLs: &SceneURLsLoader{
+				wait:     wait,
+				maxBatch: maxBatch,
+				fetch:    m.fetchScenesURLs(ctx),
+			},
+			SceneStashIDs: &SceneStashIDsLoader{
+				wait:     wait,
+				maxBatch: maxBatch,
+				fetch:    m.fetchScenesStashIDs(ctx),
+			},
+			SceneGroups: &SceneGroupsLoader{
+				wait:     wait,
+				maxBatch: maxBatch,
+				fetch:    m.fetchScenesGroups(ctx),
+			},
+			SceneMarkers: &SceneMarkersLoader{
+				wait:     wait,
+				maxBatch: maxBatch,
+				fetch:    m.fetchScenesMarkers(ctx),
 			},
 		}
 
@@ -526,6 +575,83 @@ func (m Middleware) fetchScenesLastPlayed(ctx context.Context) func(keys []int) 
 		err := m.Repository.WithDB(ctx, func(ctx context.Context) error {
 			var err error
 			ret, err = m.Repository.Scene.GetManyLastViewed(ctx, keys)
+			return err
+		})
+		return ret, toErrorSlice(err)
+	}
+}
+
+func (m Middleware) fetchScenesTagIDs(ctx context.Context) func(keys []int) ([][]int, []error) {
+	return func(keys []int) (ret [][]int, errs []error) {
+		err := m.Repository.WithDB(ctx, func(ctx context.Context) error {
+			var err error
+			ret, err = m.Repository.Scene.GetManyTagIDs(ctx, keys)
+			return err
+		})
+		return ret, toErrorSlice(err)
+	}
+}
+
+func (m Middleware) fetchScenesPerformerIDs(ctx context.Context) func(keys []int) ([][]int, []error) {
+	return func(keys []int) (ret [][]int, errs []error) {
+		err := m.Repository.WithDB(ctx, func(ctx context.Context) error {
+			var err error
+			ret, err = m.Repository.Scene.GetManyPerformerIDs(ctx, keys)
+			return err
+		})
+		return ret, toErrorSlice(err)
+	}
+}
+
+func (m Middleware) fetchScenesGalleryIDs(ctx context.Context) func(keys []int) ([][]int, []error) {
+	return func(keys []int) (ret [][]int, errs []error) {
+		err := m.Repository.WithDB(ctx, func(ctx context.Context) error {
+			var err error
+			ret, err = m.Repository.Scene.GetManyGalleryIDs(ctx, keys)
+			return err
+		})
+		return ret, toErrorSlice(err)
+	}
+}
+
+func (m Middleware) fetchScenesURLs(ctx context.Context) func(keys []int) ([][]string, []error) {
+	return func(keys []int) (ret [][]string, errs []error) {
+		err := m.Repository.WithDB(ctx, func(ctx context.Context) error {
+			var err error
+			ret, err = m.Repository.Scene.GetManyURLs(ctx, keys)
+			return err
+		})
+		return ret, toErrorSlice(err)
+	}
+}
+
+func (m Middleware) fetchScenesStashIDs(ctx context.Context) func(keys []int) ([][]models.StashID, []error) {
+	return func(keys []int) (ret [][]models.StashID, errs []error) {
+		err := m.Repository.WithDB(ctx, func(ctx context.Context) error {
+			var err error
+			ret, err = m.Repository.Scene.GetManyStashIDs(ctx, keys)
+			return err
+		})
+		return ret, toErrorSlice(err)
+	}
+}
+
+func (m Middleware) fetchScenesGroups(ctx context.Context) func(keys []int) ([][]models.GroupsScenes, []error) {
+	return func(keys []int) (ret [][]models.GroupsScenes, errs []error) {
+		err := m.Repository.WithDB(ctx, func(ctx context.Context) error {
+			var err error
+			ret, err = m.Repository.Scene.GetManyGroups(ctx, keys)
+			return err
+		})
+		return ret, toErrorSlice(err)
+	}
+}
+
+func (m Middleware) fetchScenesMarkers(ctx context.Context) func(keys []int) ([][]*models.SceneMarker, []error) {
+	return func(keys []int) (ret [][]*models.SceneMarker, errs []error) {
+		err := m.Repository.WithDB(ctx, func(ctx context.Context) error {
+			var err error
+			ret, err = m.Repository.SceneMarker.FindManyBySceneIDs(ctx, keys)
 			return err
 		})
 		return ret, toErrorSlice(err)

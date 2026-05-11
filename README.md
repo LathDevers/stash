@@ -24,10 +24,12 @@ For further information you can consult the [documentation](https://docs.stashap
 
 # Installing Stash
 
-> [!tip]
-Step-by-step instructions are available at [docs.stashapp.cc/installation](https://docs.stashapp.cc/installation/).
+> [!TIP]
+>
+> Step-by-step instructions are available at [docs.stashapp.cc/installation](https://docs.stashapp.cc/installation/).
 
-> [!important]
+> [!IMPORTANT]
+>
 > **Windows Users**
 >
 > As of version 0.27.0, Stash no longer supports _Windows 7, 8, Server 2008 and Server 2012._  
