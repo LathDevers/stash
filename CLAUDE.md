@@ -117,3 +117,38 @@ Top-level layout:
 - **Dataloaders** ([internal/api/loaders/](internal/api/loaders/)) avoid N+1 queries inside GraphQL resolvers. When adding a new lookup, prefer adding a loader over fetching directly.
 - **Plugins / scrapers ship as YAML/JS files**, not Go code — see [pkg/plugin/examples/](pkg/plugin/examples/) and `docs/` in the repo for the contracts.
 - The contributing notes ([docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)) emphasise minimalism: "features are easy to add and difficult to remove." Prefer extending an existing surface (plugin/scraper/hook) over adding a new core feature.
+
+## Active UI refactor — design tokens, layout, gotchas
+
+The frontend is partway through a Blueprint-dark → Apple/Notion-style modernization. Theme lives in [ui/v2.5/src/styles/_theme.scss](ui/v2.5/src/styles/_theme.scss) and [ui/v2.5/src/index.scss](ui/v2.5/src/index.scss); per-feature SCSS under [ui/v2.5/src/components/*/styles.scss](ui/v2.5/src/components/).
+
+### Theme tokens — current state
+
+- `$body-bg: #000` (pure black, user-set), `$card-bg: #242428`, `$textfield-bg: #2c2c30`, `$popover-bg: #2c2c30`, `$text-color: #f5f5f7`, `primary: #0091FF`, `$link-color: #0091FF`.
+- **`$secondary` is now an iOS light gray (`rgba(#EBEBF5, 0.6)`).** Historically used as a dark surface bg across the codebase (popovers, dropdowns, dividers, react-select, clearable inputs, sidebar borders). **Never use `$secondary` for a dark surface** — use `$textfield-bg`, `$popover-bg`, or `rgba(white, 0.06–0.12)` instead. Most legacy `background-color: $secondary` rules have been migrated, but if you spot a white-looking surface, this is the first thing to check.
+- Bootstrap-generated `.btn-secondary` is explicitly overridden to neutral white-alpha in [_theme.scss](ui/v2.5/src/styles/_theme.scss) (`rgba(white, 0.08)` → 0.14 → 0.18 on hover/active) — otherwise it would pick up the light `$secondary`.
+- CSS custom properties on `:root` for radii (`--radius-sm/md/lg/pill`), shadows (`--shadow-sm/md/lg`), transitions (`--transition-fast/med`). Prefer these over hardcoded values in new component SCSS.
+
+### Bootstrap integration
+
+- Codebase pins **Bootstrap 4** (not 5). Variable overrides must be set **before** `@import "bootstrap/scss/bootstrap"` in [_theme.scss](ui/v2.5/src/styles/_theme.scss); CSS vars on `:root` go after.
+- Bootstrap's `.bg-dark` utility uses `!important` — overrides require `!important` too (see `.top-nav.bg-dark` in [index.scss](ui/v2.5/src/index.scss)).
+- Form-control inputs default to white bg in Bootstrap; the dark theme is wired via `$input-bg`, `$input-color`, `$input-border-color`, `$input-placeholder-color`, `$custom-select-*` overrides already in [_theme.scss](ui/v2.5/src/styles/_theme.scss). New form fields inherit automatically.
+- React-Bootstrap `Navbar.Collapse` paints its own `bg-dark` layer on top of the navbar bg — neutralized to transparent at xl+ so the `backdrop-filter` blur works.
+- SCSS expects deprecation warnings from Bootstrap 4 (Sass `if()`, `abs()` on percentages, etc.). Quick syntax check: `cd ui/v2.5 && npx sass --no-source-map --load-path=node_modules --quiet src/index.scss /tmp/out.css 2>&1 | grep -iE "^error"`.
+
+### Layout & component gotchas
+
+- **`.details-edit`** ([components/Shared/styles.scss](ui/v2.5/src/components/Shared/styles.scss)) is the shared action bar rendered by `DetailsEditNavbar` ([components/Shared/DetailsEditNavbar.tsx](ui/v2.5/src/components/Shared/DetailsEditNavbar.tsx)) — used across Performer/Studio/Tag/Group/Scene/Image/Gallery edit pages. Spacing is `column-gap`-based, **not** margin-based. The `customButtons` prop receives a fragment; if a child renders an empty `<div>` (e.g. `ImageInput` in non-edit mode, `<div><PerformerSubmitButton/></div>` when stash-box isn't configured), `> div:empty { display: none }` keeps the gap consistent.
+- **`MainNavbar`** ([components/MainNavbar.tsx](ui/v2.5/src/components/MainNavbar.tsx)) — `LinkContainer` does **not** use `exact`, so `/performers/123` highlights `/performers`. Re-adding `exact` will lose active-nav indication on detail pages. Menu items are filtered by `configuration.interface.menuItems` (user preference) — don't replace the visible list with a single dropdown without preserving that.
+- **Filter sidebar is currently disabled.** `useSidebarState` in [components/Shared/Sidebar.tsx](ui/v2.5/src/components/Shared/Sidebar.tsx) is a stub that always returns `showSidebar: false`. The JSX still exists in every list page (SceneList, PerformerList, etc.); section content doesn't mount because `SidebarSection` uses `mountOnEnter`. The `EditFilterDialog` is the only filter UI. To bring the sidebar back (planned: nav categories), restore the original `useSidebarState` body from git history and remove `.sidebar-toggle-button-container { display: none }` from [components/Shared/styles.scss](ui/v2.5/src/components/Shared/styles.scss).
+- **FrontPage carousel arrows** are styled in [components/FrontPage/styles.scss](ui/v2.5/src/components/FrontPage/styles.scss) (`.slick-prev` / `.slick-next`), used by every `RecommendationRow`. The 40px chevron + edge-fade gradient overlays content because `padding: 0 40px` on `.slick-list` defines a "safe zone" — `overflow: hidden` clips at the **padding-box** edge, not the content-box edge, so cards rendered inside the padding region are still visible. Don't move the offset to `.recommendations-container` padding; that would leave the chevron area empty.
+- **react-select** uses its own `.react-select__control`, `.react-select__menu`, `.react-select__multi-value` classes — independent of Bootstrap form-control. Both need styling. See the `react-select__control` block in [index.scss](ui/v2.5/src/index.scss).
+
+### Edit-don't-redesign
+
+The user prefers visual polish over UX restructures. Confirmed patterns:
+- Keep navbar entity links visible — power-user hotkeys (`g s`, `g i`, ...) and the `menuItems` config rule out collapsing them behind a "Library" menu.
+- Carousel safe-zone: content scrolls **behind** the chevron, not next to it. Cinematic, not utilitarian.
+- "Modern minimalist" = Apple/Notion direction (airy spacing, larger radii, soft shadows, frosted-glass), not Linear/Vercel (dense, sharp, monochrome).
+- The user edits `_theme.scss` tokens directly between sessions. Re-read the current values before assuming what's there.
