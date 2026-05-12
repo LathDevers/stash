@@ -1,13 +1,13 @@
 /* Modern dark theme */
 
-$secondary: #2c2c30;
+$secondary: rgba(#EBEBF5, 0.6);
 $muted-gray: #a1a1a6;
-$success: #30d158;
-$warning: #ff9f0a;
-$danger: #ff453a;
+$success: rgba(#30D158, 1.0);
+$warning: rgba(#FF9230, 1.0);
+$danger: rgba(#FF4245, 1.0);
 
 $theme-colors: (
-  primary: #5b8def,
+  primary: rgba(#0091FF, 1.0),
   secondary: $secondary,
   success: $success,
   warning: $warning,
@@ -15,10 +15,10 @@ $theme-colors: (
   dark: #2c2c30,
 );
 
-$body-bg: #1a1a1d;
+$body-bg:  rgba(#000000, 1.0);
 $text-muted: $muted-gray;
-$link-color: #7aa2f7;
-$link-hover-color: #9cbaff;
+$link-color: rgba(#0091FF, 1.0);
+$link-hover-color: rgba(#0091FF, 1.0);
 $text-color: #f5f5f7;
 $pre-color: $text-color;
 $navbar-dark-color: #f5f5f7;
@@ -26,7 +26,7 @@ $popover-bg: #2c2c30;
 $dark-text: #1a1a1d;
 $textfield-bg: #2c2c30;
 $card-bg: #242428;
-$card-cap-bg: rgba(#000, 0.03);
+$card-cap-bg: rgba(black, 0.03);
 
 // Bootstrap variable overrides — modernise radii and tighten focus rings
 $border-radius: 8px;
@@ -43,6 +43,23 @@ $modal-content-border-radius: 14px;
 $dropdown-border-radius: 10px;
 $popover-border-radius: 10px;
 
+// Form control (input/select/textarea) overrides — Bootstrap defaults to
+// white bg + dark text, which clashes with our dark theme. Surfaces these
+// across Custom Fields, edit forms, and any other <Form.Control>.
+$input-bg: $textfield-bg;
+$input-disabled-bg: rgba(0, 0, 0, 0.2);
+$input-color: $text-color;
+$input-border-color: rgba(255, 255, 255, 0.08);
+$input-focus-bg: $textfield-bg;
+$input-focus-color: $text-color;
+$input-focus-border-color: #5b8def;
+$input-placeholder-color: $muted-gray;
+$custom-select-bg: $textfield-bg;
+$custom-select-color: $text-color;
+$custom-select-border-color: rgba(255, 255, 255, 0.08);
+$custom-select-disabled-bg: rgba(0, 0, 0, 0.2);
+$custom-select-disabled-color: $muted-gray;
+
 @import "bootstrap/scss/bootstrap";
 
 :root {
@@ -55,7 +72,7 @@ $popover-border-radius: 10px;
     0 4px 12px rgba(0, 0, 0, 0.18);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.25),
     0 16px 48px rgba(0, 0, 0, 0.32);
-  --surface-border: 1px solid rgba(255, 255, 255, 0.06);
+  --surface-border: 1px solid rgba(white, 0.06);
   --transition-fast: 0.15s ease;
   --transition-med: 0.2s ease;
 }
@@ -73,9 +90,42 @@ $dark-gray5: #2c2c30;
     box-shadow var(--transition-fast);
 }
 
+// Override Bootstrap-generated .btn-secondary which would otherwise use
+// the iOS systemGray2 token from $secondary (light gray on dark text).
+// We want a neutral white-alpha dark button to match the theme.
+.btn-secondary,
+.btn-secondary:focus,
+.btn-secondary.focus {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: transparent;
+  color: $text-color;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+  border-color: transparent;
+  color: $text-color;
+}
+
+.btn-secondary:not(:disabled):not(.disabled):active,
+.btn-secondary:not(:disabled):not(.disabled).active,
+.show > .btn-secondary.dropdown-toggle {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-color: transparent;
+  box-shadow: none;
+  color: $text-color;
+}
+
+.btn-secondary:disabled,
+.btn-secondary.disabled {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: transparent;
+  color: rgba(255, 255, 255, 0.4);
+}
+
 .btn.active:not(.disabled),
 .btn.active.minimal:not(.disabled) {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(white, 0.12);
   color: $text-color;
 }
 
@@ -93,12 +143,12 @@ button.minimal {
   }
 
   &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(white, 0.08);
     color: $text-color;
   }
 
   &:active:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(white, 0.12);
     color: $text-color;
   }
 }
@@ -117,26 +167,36 @@ hr {
 
 .nav-tabs {
   border: none;
+  column-gap: 0.25rem;
   margin: auto;
   margin-bottom: 1.5rem;
 
+  // Match the navbar's minimal-button styling — subtle pill on hover,
+  // slightly darker pill for the active tab. Removes the blue underline.
   .nav-link {
+    background: transparent;
     border: none;
+    border-radius: var(--radius-sm);
     color: $text-color;
-    padding: 8px;
+    padding: 6px 14px;
+    transition: background-color var(--transition-fast),
+      color var(--transition-fast);
 
     &.active {
-      border-bottom: 2px solid;
-      color: $link-color;
+      background-color: rgba(255, 255, 255, 0.12);
+      border: none;
+      color: $text-color;
 
       &:hover {
-        border-bottom-color: $link-color;
+        background-color: rgba(255, 255, 255, 0.14);
+        border: none;
         cursor: default;
       }
     }
 
     &:hover {
-      border-bottom: 2px solid white;
+      background-color: rgba(255, 255, 255, 0.08);
+      border: none;
     }
   }
 }
@@ -155,7 +215,7 @@ hr {
 
   thead {
     th {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(white, 0.1);
       border-right: none;
       border-top: none;
       font-weight: 600;
@@ -169,13 +229,13 @@ hr {
     transition: background-color var(--transition-fast);
 
     &:hover td {
-      background-color: rgba(255, 255, 255, 0.04);
+      background-color: rgba(white, 0.04);
     }
   }
 
   td {
     border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(white, 0.05);
     padding: 0.625rem 0.75rem;
     vertical-align: middle;
   }

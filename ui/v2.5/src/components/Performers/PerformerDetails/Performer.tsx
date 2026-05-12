@@ -499,7 +499,9 @@ const PerformerPage: React.FC<IProps> = PatchComponent(
                         classNames="mb-2"
                         customButtons={
                           <>
-                            {renderMergeButton()}
+                            <div>
+                              {renderMergeButton()}
+                            </div>
                             <div>
                               <PerformerSubmitButton performer={performer} />
                             </div>

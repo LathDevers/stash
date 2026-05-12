@@ -50,7 +50,7 @@
     font-size: 1rem;
 
     &:hover {
-      background-color: rgba(138, 155, 168, 0.15);
+      background-color: rgba(255, 255, 255, 0.06);
       cursor: pointer;
     }
   }
@@ -246,7 +246,7 @@ input[type="range"].zoom-slider {
 
       &:hover,
       &:focus-visible {
-        background-color: rgba(138, 155, 168, 0.15);
+        background-color: rgba(255, 255, 255, 0.06);
       }
 
       .selected-object-label,
@@ -546,7 +546,7 @@ ul.selectable-list {
 
       &:hover,
       &:focus-visible {
-        background-color: rgba(138, 155, 168, 0.15);
+        background-color: rgba(255, 255, 255, 0.06);
       }
 
       .selected-object-label,
@@ -653,7 +653,7 @@ ul.selectable-list {
 
       &:hover,
       &:focus-visible {
-        background-color: rgba(138, 155, 168, 0.15);
+        background-color: rgba(255, 255, 255, 0.06);
       }
 
       .selected-object-label,
@@ -745,7 +745,7 @@ ul.selectable-list {
     padding-left: 0.5rem;
 
     &:hover {
-      background-color: rgba(138, 155, 168, 0.15);
+      background-color: rgba(255, 255, 255, 0.06);
     }
   }
 }

@@ -1,21 +1,13 @@
-import React, {
-  PropsWithChildren,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { PropsWithChildren, useEffect } from "react";
 import { CollapseButton } from "./CollapseButton";
 import { useOnOutsideClick } from "src/hooks/OutsideClick";
 import ScreenUtils, { useMediaQuery } from "src/utils/screen";
-import { IViewConfig, useInterfaceLocalForage } from "src/hooks/LocalForage";
 import { View } from "../List/views";
 import cx from "classnames";
 import { Button, CollapseProps } from "react-bootstrap";
 import { useIntl } from "react-intl";
 import { Icon } from "./Icon";
 import { faSliders } from "@fortawesome/free-solid-svg-icons";
-import { useHistory } from "react-router-dom";
 
 export type SidebarSectionStates = Record<string, boolean>;
 
@@ -158,87 +150,16 @@ export function defaultShowSidebar() {
   return !ScreenUtils.matchesMediaQuery(fixedSidebarMediaQuery);
 }
 
-export function useSidebarState(view?: View) {
-  const [interfaceLocalForage, setInterfaceLocalForage] =
-    useInterfaceLocalForage();
-  const history = useHistory();
-
-  const { data: interfaceLocalForageData, loading } = interfaceLocalForage;
-
-  const viewConfig: IViewConfig = useMemo(() => {
-    return view ? interfaceLocalForageData?.viewConfig?.[view] || {} : {};
-  }, [view, interfaceLocalForageData]);
-
-  const [showSidebar, setShowSidebar] = useState<boolean>();
-  const [sectionOpen, setSectionOpen] = useState<SidebarSectionStates>();
-
-  // set initial state once loading is done
-  useEffect(() => {
-    if (showSidebar !== undefined) return;
-
-    if (!view) {
-      setShowSidebar(defaultShowSidebar());
-      return;
-    }
-
-    if (loading) return;
-
-    // only show sidebar by default on large screens
-    setShowSidebar(!!viewConfig.showSidebar && defaultShowSidebar());
-    setSectionOpen(
-      (history.location.state as { sectionOpen?: SidebarSectionStates })
-        ?.sectionOpen || {}
-    );
-  }, [
-    view,
-    loading,
-    showSidebar,
-    viewConfig.showSidebar,
-    history.location.state,
-  ]);
-
-  const onSetShowSidebar = useCallback(
-    (show: boolean | ((prevState: boolean | undefined) => boolean)) => {
-      const nv = typeof show === "function" ? show(showSidebar) : show;
-      setShowSidebar(nv);
-      if (view === undefined) return;
-
-      setInterfaceLocalForage((prev) => ({
-        ...prev,
-        viewConfig: {
-          ...prev.viewConfig,
-          [view]: {
-            ...viewConfig,
-            showSidebar: nv,
-          },
-        },
-      }));
-    },
-    [showSidebar, setInterfaceLocalForage, view, viewConfig]
-  );
-
-  const onSetSectionOpen = useCallback(
-    (section: string, open: boolean) => {
-      const newSectionOpen = { ...sectionOpen, [section]: open };
-      setSectionOpen(newSectionOpen);
-      if (view === undefined) return;
-
-      history.replace({
-        ...history.location,
-        state: {
-          ...(history.location.state as {}),
-          sectionOpen: newSectionOpen,
-        },
-      });
-    },
-    [sectionOpen, view, history]
-  );
-
+// Filter sidebar is currently dropped — the Edit Filter dialog covers the
+// same surface and the sidebar is reserved for future "categories" navigation.
+// To re-enable, restore the previous body of this hook from git history.
+export function useSidebarState(_view?: View) {
   return {
-    showSidebar: showSidebar ?? defaultShowSidebar(),
-    sectionOpen: sectionOpen || {},
-    setShowSidebar: onSetShowSidebar,
-    setSectionOpen: onSetSectionOpen,
-    loading: showSidebar === undefined,
+    showSidebar: false,
+    sectionOpen: {} as SidebarSectionStates,
+    setShowSidebar: (_show: boolean | ((prev: boolean | undefined) => boolean)) =>
+      undefined,
+    setSectionOpen: (_section: string, _open: boolean) => undefined,
+    loading: false,
   };
 }

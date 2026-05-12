@@ -56,20 +56,25 @@
     This allows the div to expand, to right-justify the last (save / delete) button.
   */
 
+  column-gap: 0.5rem;
   display: flex;
   flex-wrap: wrap;
   justify-content: left;
   padding: 0;
   row-gap: 0.5rem;
 
+  // Some children (ImageInput in non-edit mode, PerformerSubmitButton when
+  // stash-box isn't configured) render as empty divs. Hide them so they
+  // don't consume column-gap slots.
+  > div:empty {
+    display: none;
+  }
+
   > .btn {
-    margin-right: 0.5rem;
     white-space: nowrap;
   }
 
   > .btn-group {
-    margin-right: 0.5rem;
-
     .btn {
       margin-right: 0;
     }
@@ -535,7 +540,7 @@ div.react-datepicker {
     }
 
     &:hover {
-      background: rgba(138, 155, 168, 0.15);
+      background: rgba(255, 255, 255, 0.06);
     }
   }
 
@@ -544,7 +549,7 @@ div.react-datepicker {
     color: $text-color;
 
     ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover {
-      background-color: rgba(138, 155, 168, 0.15);
+      background-color: rgba(255, 255, 255, 0.06);
     }
   }
 
@@ -616,14 +621,21 @@ div.react-datepicker {
 .clearable-text-field,
 .clearable-text-field:active,
 .clearable-text-field:focus {
-  background-color: $secondary;
-  border: 0;
-  border-color: $secondary;
-  color: #fff;
+  background-color: $textfield-bg;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  color: $text-color;
+  transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.clearable-text-field:focus {
+  border-color: $primary;
+  box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.3);
 }
 
 .clearable-text-field-clear {
-  background-color: $secondary;
+  background-color: transparent;
   bottom: 0;
   color: $muted-gray;
   font-size: 0.875rem;
@@ -639,9 +651,10 @@ div.react-datepicker {
   &:active,
   &:not(:disabled):not(.disabled):active,
   &:not(:disabled):not(.disabled):active:focus {
-    background-color: $secondary;
+    background-color: transparent;
     border-color: transparent;
     box-shadow: none;
+    color: $text-color;
   }
 }
 
@@ -718,7 +731,7 @@ button.btn.favorite-button {
   border-radius: 5px;
 
   &:hover {
-    background: rgba(138, 155, 168, 0.15);
+    background: rgba(255, 255, 255, 0.06);
     color: #f5f8fa;
   }
 
@@ -892,13 +905,13 @@ button.btn.favorite-button {
   display: flex;
 
   .sidebar {
-    // TODO - use different colours for sidebar and toolbar
     background-color: $body-bg;
-    border-right: 1px solid $secondary;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
     flex: $sidebar-width;
     flex-grow: 0;
     flex-shrink: 0;
     padding-left: 15px;
+    padding-right: 15px;
     transition: margin-left 0.1s;
   }
 
@@ -954,28 +967,11 @@ button.btn.favorite-button {
   }
 }
 
+// Filter sidebar is currently disabled (see useSidebarState). Hide the
+// toggle button so users don't get a no-op control. Revert this rule
+// alongside useSidebarState if the sidebar is brought back.
 .sidebar-toggle-button-container {
-  height: 100%;
-  position: absolute;
-
-  .sidebar-toggle-button {
-    border-bottom: 1px solid $secondary;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 10px;
-    border-right: 1px solid $secondary;
-    border-top: 1px solid $secondary;
-    border-top-left-radius: 0;
-    border-top-right-radius: 10px;
-    margin-left: -15px;
-    opacity: 0.5;
-    position: sticky;
-    top: calc($navbar-height + 0.5rem);
-    z-index: 10;
-
-    @include media-breakpoint-down(sm) {
-      top: 0.5rem;
-    }
-  }
+  display: none;
 }
 
 .sidebar-pane:not(.hide-sidebar) .sidebar-toggle-button-container {
@@ -985,7 +981,6 @@ button.btn.favorite-button {
 }
 
 .sidebar-toolbar {
-  // TODO - use different colours for sidebar and toolbar
   background-color: $body-bg;
   display: flex;
   justify-content: space-between;
@@ -1003,29 +998,35 @@ button.btn.favorite-button {
 }
 
 .sidebar-section {
-  border-bottom: 1px solid $secondary;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
   .collapse-header {
-    // background-color: $secondary;
-
-    padding: 0.25rem;
+    padding: 0.25rem 0;
 
     .collapse-button {
-      font-weight: bold;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      padding: 0.5rem 0.5rem;
       text-align: left;
+      transition: background-color var(--transition-fast);
       width: 100%;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.04);
+      }
     }
   }
 
   .collapse,
   // include collapsing to allow for the transition
   .collapsing {
+    padding-bottom: 0.5rem;
     padding-top: 0.25rem;
   }
 }
 
 .sidebar-section:first-child .collapse-header {
-  border-top: 1px solid $secondary;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 $sticky-header-height: calc(50px + 3.3rem);
@@ -1232,7 +1233,7 @@ input[type="range"].double-range-slider-max {
       transition: background-color 0.2s;
 
       &:hover {
-        background-color: rgba(138, 155, 168, 0.1);
+        background-color: rgba(255, 255, 255, 0.04);
       }
 
       &.selected {

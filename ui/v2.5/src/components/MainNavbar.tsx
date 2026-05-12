@@ -348,7 +348,7 @@ export const MainNavbar: React.FC = () => {
                 key={href}
                 className="col-4 col-sm-3 col-md-2 col-lg-auto"
               >
-                <LinkContainer activeClassName="active" exact to={href}>
+                <LinkContainer activeClassName="active" to={href}>
                   <Button className="minimal p-4 p-xl-2 d-flex d-xl-inline-block flex-column justify-content-between align-items-center">
                     <Icon
                       {...{ icon }}
