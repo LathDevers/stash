@@ -1072,10 +1072,8 @@ div.dropdown-menu {
   justify-content: start;
   padding: 0.25rem 1.25rem;
 
-  // override Bootstrap's bg-dark — mostly opaque to match body, hint of
-  // translucency so backdrop-filter still picks up content scrolling under
   &.bg-dark {
-    background-color: transparent !important;
+    background-color: black !important;
   }
 
   // Navbar.Collapse also has bg-dark which would paint a lighter layer on

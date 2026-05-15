@@ -137,6 +137,64 @@ function useEmptyFilter(props: {
   return emptyFilter;
 }
 
+const VIEW_PREFS_KEY_PREFIX = "stash.viewPrefs.";
+
+interface IViewPreferences {
+  zoomIndex?: number;
+  displayMode?: DisplayMode;
+}
+
+function readViewPreferences(view?: View): IViewPreferences {
+  if (!view) return {};
+  try {
+    const raw = localStorage.getItem(`${VIEW_PREFS_KEY_PREFIX}${view}`);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    const prefs: IViewPreferences = {};
+    if (
+      typeof parsed.zoomIndex === "number" &&
+      Number.isFinite(parsed.zoomIndex)
+    ) {
+      prefs.zoomIndex = parsed.zoomIndex;
+    }
+    if (
+      typeof parsed.displayMode === "number" &&
+      Number.isFinite(parsed.displayMode)
+    ) {
+      prefs.displayMode = parsed.displayMode as DisplayMode;
+    }
+    return prefs;
+  } catch {
+    return {};
+  }
+}
+
+function writeViewPreferences(view: View, prefs: IViewPreferences) {
+  try {
+    localStorage.setItem(
+      `${VIEW_PREFS_KEY_PREFIX}${view}`,
+      JSON.stringify(prefs)
+    );
+  } catch {
+    // storage disabled / quota exceeded — non-fatal
+  }
+}
+
+function applyViewPreferences(
+  filter: ListFilterModel,
+  prefs: IViewPreferences
+) {
+  if (prefs.zoomIndex !== undefined) {
+    filter.zoomIndex = prefs.zoomIndex;
+  }
+  if (
+    prefs.displayMode !== undefined &&
+    filter.options.displayModeOptions.includes(prefs.displayMode)
+  ) {
+    filter.displayMode = prefs.displayMode;
+  }
+}
+
 export interface IFilterStateHook {
   filterMode: GQL.FilterMode;
   defaultFilter?: ListFilterModel;
@@ -159,10 +217,15 @@ export function useFilterState(
     defaultFilter: propDefaultFilter,
   } = props;
 
-  const [filter, setFilterState] = useState<ListFilterModel>(
-    () =>
-      new ListFilterModel(filterMode, config, { defaultSortBy: defaultSort })
-  );
+  const persistedPrefs = useMemo(() => readViewPreferences(view), [view]);
+
+  const [filter, setFilterState] = useState<ListFilterModel>(() => {
+    const initial = new ListFilterModel(filterMode, config, {
+      defaultSortBy: defaultSort,
+    });
+    applyViewPreferences(initial, persistedPrefs);
+    return initial;
+  });
 
   const emptyFilter = useEmptyFilter({ filterMode, defaultSort, config });
 
@@ -171,10 +234,39 @@ export function useFilterState(
     view
   );
 
+  const effectiveDefaultFilter = useMemo(() => {
+    const base = propDefaultFilter ?? defaultFilterFromConfig;
+    if (
+      persistedPrefs.zoomIndex === undefined &&
+      persistedPrefs.displayMode === undefined
+    ) {
+      return base;
+    }
+    const cloned = base.clone();
+    applyViewPreferences(cloned, persistedPrefs);
+    return cloned;
+  }, [propDefaultFilter, defaultFilterFromConfig, persistedPrefs]);
+
   const { setFilter } = useFilterURL(filter, setFilterState, {
-    defaultFilter: propDefaultFilter ?? defaultFilterFromConfig,
+    defaultFilter: effectiveDefaultFilter,
     active: useURL,
   });
+
+  // Persist zoom and display mode per view so the next visit restores them.
+  useEffect(() => {
+    if (!view) return;
+    const current = readViewPreferences(view);
+    if (
+      current.zoomIndex === filter.zoomIndex &&
+      current.displayMode === filter.displayMode
+    ) {
+      return;
+    }
+    writeViewPreferences(view, {
+      zoomIndex: filter.zoomIndex,
+      displayMode: filter.displayMode,
+    });
+  }, [view, filter.zoomIndex, filter.displayMode]);
 
   return { filter, setFilter };
 }

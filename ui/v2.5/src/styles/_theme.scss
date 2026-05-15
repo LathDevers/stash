@@ -64,7 +64,7 @@ $custom-select-disabled-color: $muted-gray;
 
 :root {
   --radius-sm: 6px;
-  --radius-md: 10px;
+  --radius-md: 16px;
   --radius-lg: 14px;
   --radius-pill: 999px;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -247,7 +247,7 @@ hr {
 
 .card {
   border: none;
-  margin: 5px;
+  margin: 8px;
   overflow: hidden;
 }
 
