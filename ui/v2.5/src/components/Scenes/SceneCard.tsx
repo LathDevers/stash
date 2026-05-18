@@ -56,17 +56,23 @@ export const ScenePreview: React.FC<IScenePreviewProps> = ({
   const videoEl = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    const el = videoEl.current;
+    if (!el) return;
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.intersectionRatio > 0)
+        if (entry.intersectionRatio > 0) {
           // Catch is necessary due to DOMException if user hovers before clicking on page
-          videoEl.current?.play()?.catch(() => {});
-        else videoEl.current?.pause();
+          el.play()?.catch(() => {});
+        } else {
+          el.pause();
+        }
       });
     });
 
-    if (videoEl.current) observer.observe(videoEl.current);
-  });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (videoEl?.current?.volume)
@@ -447,64 +453,65 @@ const SceneCardImage = PatchComponent(
   }
 );
 
-export const SceneCard = PatchComponent(
-  "SceneCard",
-  (props: ISceneCardProps) => {
-    const { configuration } = useConfigurationContext();
+const SceneCardComponent = (props: ISceneCardProps) => {
+  const { configuration } = useConfigurationContext();
 
-    const file = useMemo(
-      () => (props.scene.files.length > 0 ? props.scene.files[0] : undefined),
-      [props.scene]
-    );
+  const file = useMemo(
+    () => (props.scene.files.length > 0 ? props.scene.files[0] : undefined),
+    [props.scene]
+  );
 
-    function zoomIndex() {
-      if (!props.compact && props.zoomIndex !== undefined) {
-        return `zoom-${props.zoomIndex}`;
-      }
-
-      return "";
+  function zoomIndex() {
+    if (!props.compact && props.zoomIndex !== undefined) {
+      return `zoom-${props.zoomIndex}`;
     }
 
-    function filelessClass() {
-      if (!props.scene.files.length) {
-        return "fileless";
-      }
-
-      return "";
-    }
-
-    const cont = configuration?.interface.continuePlaylistDefault ?? false;
-
-    const sceneLink = props.queue
-      ? props.queue.makeLink(props.scene.id, {
-          sceneIndex: props.index,
-          continue: cont,
-        })
-      : `/scenes/${props.scene.id}`;
-
-    return (
-      <GridCard
-        className={`scene-card ${zoomIndex()} ${filelessClass()}`}
-        url={sceneLink}
-        title={objectTitle(props.scene)}
-        width={props.width}
-        linkClassName="scene-card-link"
-        thumbnailSectionClassName="video-section"
-        resumeTime={props.scene.resume_time ?? undefined}
-        duration={file?.duration ?? undefined}
-        interactiveHeatmap={
-          props.scene.interactive_speed
-            ? props.scene.paths.interactive_heatmap ?? undefined
-            : undefined
-        }
-        image={<SceneCardImage {...props} />}
-        overlays={<SceneCardOverlays {...props} />}
-        details={<SceneCardDetails {...props} />}
-        popovers={<SceneCardPopovers {...props} />}
-        selected={props.selected}
-        selecting={props.selecting}
-        onSelectedChanged={props.onSelectedChanged}
-      />
-    );
+    return "";
   }
+
+  function filelessClass() {
+    if (!props.scene.files.length) {
+      return "fileless";
+    }
+
+    return "";
+  }
+
+  const cont = configuration?.interface.continuePlaylistDefault ?? false;
+
+  const sceneLink = props.queue
+    ? props.queue.makeLink(props.scene.id, {
+        sceneIndex: props.index,
+        continue: cont,
+      })
+    : `/scenes/${props.scene.id}`;
+
+  return (
+    <GridCard
+      className={`scene-card ${zoomIndex()} ${filelessClass()}`}
+      url={sceneLink}
+      title={objectTitle(props.scene)}
+      width={props.width}
+      linkClassName="scene-card-link"
+      thumbnailSectionClassName="video-section"
+      resumeTime={props.scene.resume_time ?? undefined}
+      duration={file?.duration ?? undefined}
+      interactiveHeatmap={
+        props.scene.interactive_speed
+          ? props.scene.paths.interactive_heatmap ?? undefined
+          : undefined
+      }
+      image={<SceneCardImage {...props} />}
+      overlays={<SceneCardOverlays {...props} />}
+      details={<SceneCardDetails {...props} />}
+      popovers={<SceneCardPopovers {...props} />}
+      selected={props.selected}
+      selecting={props.selecting}
+      onSelectedChanged={props.onSelectedChanged}
+    />
+  );
+};
+
+export const SceneCard = React.memo(
+  PatchComponent("SceneCard", SceneCardComponent)
 );

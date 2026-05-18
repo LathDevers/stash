@@ -1,4 +1,4 @@
-import React, { MouseEvent, useMemo } from "react";
+import React, { MouseEvent, useEffect, useMemo, useRef } from "react";
 import { Button, ButtonGroup } from "react-bootstrap";
 import cx from "classnames";
 import * as GQL from "src/core/generated-graphql";
@@ -168,6 +168,7 @@ const ImageCardImage = PatchComponent(
           : undefined,
       [props.image]
     );
+    const videoEl = useRef<HTMLVideoElement>(null);
 
     function isPortrait() {
       const width = file?.width ? file.width : 0;
@@ -179,20 +180,50 @@ const ImageCardImage = PatchComponent(
       props.image.paths.preview != ""
         ? props.image.paths.preview ?? ""
         : props.image.paths.thumbnail ?? "";
-    const video = source.includes("preview");
-    const ImagePreview = video ? "video" : "img";
+    const isVideo = source.includes("preview");
+
+    useEffect(() => {
+      if (!isVideo) return;
+      const el = videoEl.current;
+      if (!el) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio > 0) {
+            el.play()?.catch(() => { });
+          } else {
+            el.pause();
+          }
+        });
+      });
+
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, [isVideo]);
 
     return (
       <>
         <div className={cx("image-card-preview", { portrait: isPortrait() })}>
-          <ImagePreview
-            loop={video}
-            autoPlay={video}
-            playsInline={video}
-            className="image-card-preview-image"
-            alt={props.image.title ?? ""}
-            src={source}
-          />
+          {isVideo ? (
+            <video
+              ref={videoEl}
+              loop
+              muted
+              playsInline
+              preload="none"
+              disableRemotePlayback
+              className="image-card-preview-image"
+              src={source}
+            />
+          ) : (
+            <img
+              loading="lazy"
+              decoding="async"
+              className="image-card-preview-image"
+              alt={props.image.title ?? ""}
+              src={source}
+            />
+          )}
           {props.onPreview ? (
             <div className="preview-button">
               <Button onClick={props.onPreview}>
@@ -207,24 +238,25 @@ const ImageCardImage = PatchComponent(
   }
 );
 
-export const ImageCard: React.FC<IImageCardProps> = PatchComponent(
-  "ImageCard",
-  (props: IImageCardProps) => {
-    return (
-      <GridCard
-        className={`image-card zoom-${props.zoomIndex}`}
-        url={`/images/${props.image.id}`}
-        width={props.cardWidth}
-        title={imageTitle(props.image)}
-        linkClassName="image-card-link"
-        image={<ImageCardImage {...props} />}
-        details={<ImageCardDetails {...props} />}
-        overlays={<ImageCardOverlays {...props} />}
-        popovers={<ImageCardPopovers {...props} />}
-        selected={props.selected}
-        selecting={props.selecting}
-        onSelectedChanged={props.onSelectedChanged}
-      />
-    );
-  }
+const ImageCardComponent = (props: IImageCardProps) => {
+  return (
+    <GridCard
+      className={`image-card zoom-${props.zoomIndex}`}
+      url={`/images/${props.image.id}`}
+      width={props.cardWidth}
+      title={imageTitle(props.image)}
+      linkClassName="image-card-link"
+      image={<ImageCardImage {...props} />}
+      details={<ImageCardDetails {...props} />}
+      overlays={<ImageCardOverlays {...props} />}
+      popovers={<ImageCardPopovers {...props} />}
+      selected={props.selected}
+      selecting={props.selecting}
+      onSelectedChanged={props.onSelectedChanged}
+    />
+  );
+};
+
+export const ImageCard: React.FC<IImageCardProps> = React.memo(
+  PatchComponent("ImageCard", ImageCardComponent)
 );

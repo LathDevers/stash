@@ -417,6 +417,16 @@ export function useListSelect<T extends IHasID = IHasID>(items: T[]) {
   const [itemsSelected, setItemsSelected] = useState<T[]>([]);
   const [lastClickedId, setLastClickedId] = useState<string>();
 
+  // refs let the public callbacks stay reference-stable across renders
+  const itemsRef = useRef(items);
+  const lastClickedIdRef = useRef(lastClickedId);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+  useEffect(() => {
+    lastClickedIdRef.current = lastClickedId;
+  }, [lastClickedId]);
+
   // TODO - this doesn't get updated when items changes
   const selectedIds = useMemo(() => {
     const newSelectedIds = new Set<string>();
@@ -450,17 +460,16 @@ export function useListSelect<T extends IHasID = IHasID>(items: T[]) {
   //   setSelectedIds(newSelectedIds);
   // }, [prevItems, items, selectedIds]);
 
-  function singleSelect(id: string, selected: boolean) {
+  const singleSelect = useCallback((id: string, selected: boolean) => {
     setLastClickedId(id);
 
     setItemsSelected((prevSelected) => {
       if (selected) {
-        // prevent duplicates
         if (prevSelected.some((v) => v.id === id)) {
           return prevSelected;
         }
 
-        const item = items.find((i) => i.id === id);
+        const item = itemsRef.current.find((i) => i.id === id);
         if (item) {
           return [...prevSelected, item];
         }
@@ -469,71 +478,67 @@ export function useListSelect<T extends IHasID = IHasID>(items: T[]) {
         return prevSelected.filter((item) => item.id !== id);
       }
     });
-  }
+  }, []);
 
-  function selectRange(startIndex: number, endIndex: number) {
+  const multiSelect = useCallback((id: string) => {
+    const currentItems = itemsRef.current;
+    const lastId = lastClickedIdRef.current;
+
+    let startIndex = 0;
+    if (lastId) {
+      startIndex = currentItems.findIndex((item) => item.id === lastId);
+    }
+    const thisIndex = currentItems.findIndex((item) => item.id === id);
+
     let start = startIndex;
-    let end = endIndex;
+    let end = thisIndex;
     if (start > end) {
       const tmp = start;
       start = end;
       end = tmp;
     }
 
-    const subset = items.slice(start, end + 1);
+    const subset = currentItems.slice(start, end + 1);
 
-    // prevent duplicates
-    const toAdd = subset.filter((item) => !selectedIds.has(item.id));
-
-    const newSelected = itemsSelected.concat(toAdd);
-    setItemsSelected(newSelected);
-  }
-
-  function multiSelect(id: string) {
-    let startIndex = 0;
-    let thisIndex = -1;
-
-    if (lastClickedId) {
-      startIndex = items.findIndex((item) => {
-        return item.id === lastClickedId;
-      });
-    }
-
-    thisIndex = items.findIndex((item) => {
-      return item.id === id;
+    setItemsSelected((prevSelected) => {
+      const prevIds = new Set(prevSelected.map((item) => item.id));
+      const toAdd = subset.filter((item) => !prevIds.has(item.id));
+      if (toAdd.length === 0) return prevSelected;
+      return prevSelected.concat(toAdd);
     });
+  }, []);
 
-    selectRange(startIndex, thisIndex);
-  }
+  const onSelectChange = useCallback(
+    (id: string, selected: boolean, shiftKey: boolean) => {
+      if (shiftKey) {
+        multiSelect(id);
+      } else {
+        singleSelect(id, selected);
+      }
+    },
+    [multiSelect, singleSelect]
+  );
 
-  function onSelectChange(id: string, selected: boolean, shiftKey: boolean) {
-    if (shiftKey) {
-      multiSelect(id);
-    } else {
-      singleSelect(id, selected);
-    }
-  }
-
-  function onSelectAll() {
+  const onSelectAll = useCallback(() => {
     // #5341 - HACK/TODO: maintaining legacy behaviour of replacing selected items with
     // all items on the current page. To be consistent with the existing behaviour, it
     // should probably _add_ all items on the current page to the selected items.
-    setItemsSelected([...items]);
+    setItemsSelected([...itemsRef.current]);
     setLastClickedId(undefined);
-  }
+  }, []);
 
-  function onSelectNone() {
+  const onSelectNone = useCallback(() => {
     setItemsSelected([]);
     setLastClickedId(undefined);
-  }
+  }, []);
 
-  function onInvertSelection() {
+  const onInvertSelection = useCallback(() => {
     setItemsSelected((prevSelected) => {
       const selectedSet = new Set(prevSelected.map((item) => item.id));
-      return items.filter((item) => !selectedSet.has(item.id));
+      return itemsRef.current.filter((item) => !selectedSet.has(item.id));
     });
     setLastClickedId(undefined);
-  }
+  }, []);
 
   // TODO - this is for backwards compatibility
   const getSelected = useCallback(() => itemsSelected, [itemsSelected]);
@@ -556,6 +561,28 @@ export function useListSelect<T extends IHasID = IHasID>(items: T[]) {
 export type IListSelect<T extends IHasID = IHasID> = ReturnType<
   typeof useListSelect<T>
 >;
+
+// Builds a per-item select handler keyed by id so that each card receives a
+// reference-stable callback. As long as items and onSelectChange are stable,
+// the returned map and its callbacks are stable too — letting React.memo'd
+// cards skip re-renders.
+export function useSelectHandlers<T extends IHasID = IHasID>(
+  items: T[],
+  onSelectChange: (id: string, selected: boolean, shiftKey: boolean) => void
+) {
+  return useMemo(() => {
+    const map = new Map<
+      string,
+      (selected: boolean, shiftKey: boolean) => void
+    >();
+    items.forEach((item) => {
+      map.set(item.id, (selected, shiftKey) =>
+        onSelectChange(item.id, selected, shiftKey)
+      );
+    });
+    return map;
+  }, [items, onSelectChange]);
+}
 
 // returns true if the filter has changed in a way that impacts the total count
 function totalCountImpacted(

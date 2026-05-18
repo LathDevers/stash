@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import * as GQL from "src/core/generated-graphql";
 import { ImageCard } from "./ImageCard";
 import {
@@ -6,6 +6,7 @@ import {
   useContainerDimensions,
 } from "../Shared/GridCard/GridCard";
 import { PatchComponent } from "src/patch";
+import { useSelectHandlers } from "../List/util";
 
 interface IImageCardGrid {
   images: GQL.SlimImageDataFragment[];
@@ -22,23 +23,29 @@ export const ImageCardGrid: React.FC<IImageCardGrid> = PatchComponent(
   ({ images, selectedIds, zoomIndex, onSelectChange, onPreview }) => {
     const [componentRef, { width: containerWidth }] = useContainerDimensions();
     const cardWidth = useCardWidth(containerWidth, zoomIndex, zoomWidths);
+    const selectHandlers = useSelectHandlers(images, onSelectChange);
+    const selecting = selectedIds.size > 0;
+    const previewHandlers = useMemo(() => {
+      if (selecting) return undefined;
+      const map = new Map<string, (ev: React.MouseEvent) => void>();
+      images.forEach((image, index) => {
+        map.set(image.id, (ev) => onPreview(index, ev));
+      });
+      return map;
+    }, [images, onPreview, selecting]);
 
     return (
       <div className="row justify-content-center" ref={componentRef}>
-        {images.map((image, index) => (
+        {images.map((image) => (
           <ImageCard
             key={image.id}
             cardWidth={cardWidth}
             image={image}
             zoomIndex={zoomIndex}
-            selecting={selectedIds.size > 0}
+            selecting={selecting}
             selected={selectedIds.has(image.id)}
-            onSelectedChanged={(selected: boolean, shiftKey: boolean) =>
-              onSelectChange(image.id, selected, shiftKey)
-            }
-            onPreview={
-              selectedIds.size < 1 ? (ev) => onPreview(index, ev) : undefined
-            }
+            onSelectedChanged={selectHandlers.get(image.id)}
+            onPreview={previewHandlers?.get(image.id)}
           />
         ))}
       </div>

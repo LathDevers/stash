@@ -7,6 +7,7 @@ import {
   useContainerDimensions,
 } from "../Shared/GridCard/GridCard";
 import { PatchComponent } from "src/patch";
+import { useSelectHandlers } from "../List/util";
 
 interface ISceneCardGrid {
   scenes: GQL.SlimSceneDataFragment[];
@@ -25,6 +26,8 @@ export const SceneCardGrid: React.FC<ISceneCardGrid> = PatchComponent(
     const [componentRef, { width: containerWidth }] = useContainerDimensions();
 
     const cardWidth = useCardWidth(containerWidth, zoomIndex, zoomWidths);
+    const selectHandlers = useSelectHandlers(scenes, onSelectChange);
+    const selecting = selectedIds.size > 0;
 
     return (
       <div className="row justify-content-center" ref={componentRef}>
@@ -36,11 +39,9 @@ export const SceneCardGrid: React.FC<ISceneCardGrid> = PatchComponent(
             queue={queue}
             index={index}
             zoomIndex={zoomIndex}
-            selecting={selectedIds.size > 0}
+            selecting={selecting}
             selected={selectedIds.has(scene.id)}
-            onSelectedChanged={(selected: boolean, shiftKey: boolean) =>
-              onSelectChange(scene.id, selected, shiftKey)
-            }
+            onSelectedChanged={selectHandlers.get(scene.id)}
             fromGroupId={fromGroupId}
           />
         ))}
