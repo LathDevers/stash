@@ -177,9 +177,9 @@ const ImageCardImage = PatchComponent(
     }
 
     const source =
-      props.image.paths.preview != ""
-        ? props.image.paths.preview ?? ""
-        : props.image.paths.thumbnail ?? "";
+      props.image.paths.preview !== ""
+        ? (props.image.paths.preview ?? "")
+        : (props.image.paths.thumbnail ?? "");
     const isVideo = source.includes("preview");
 
     useEffect(() => {
@@ -190,7 +190,7 @@ const ImageCardImage = PatchComponent(
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           if (entry.intersectionRatio > 0) {
-            el.play()?.catch(() => { });
+            el.play()?.catch(() => {});
           } else {
             el.pause();
           }

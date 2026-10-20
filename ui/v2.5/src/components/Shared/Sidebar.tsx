@@ -113,7 +113,7 @@ export const SidebarSection: React.FC<
   const openState =
     !contextState || !sectionID
       ? undefined
-      : contextState.sectionOpen[sectionID] ?? undefined;
+      : (contextState.sectionOpen[sectionID] ?? undefined);
 
   function onOpenInternal(open: boolean) {
     if (contextState && sectionID) {
@@ -157,8 +157,9 @@ export function useSidebarState(_view?: View) {
   return {
     showSidebar: false,
     sectionOpen: {} as SidebarSectionStates,
-    setShowSidebar: (_show: boolean | ((prev: boolean | undefined) => boolean)) =>
-      undefined,
+    setShowSidebar: (
+      _show: boolean | ((prev: boolean | undefined) => boolean)
+    ) => undefined,
     setSectionOpen: (_section: string, _open: boolean) => undefined,
     loading: false,
   };

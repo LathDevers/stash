@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { Button, ButtonGroup, OverlayTrigger, Tooltip } from "react-bootstrap";
 import { useHistory } from "react-router-dom";
 import cx from "classnames";
@@ -43,68 +43,70 @@ interface IScenePreviewProps {
   disabled?: boolean;
 }
 
-export const ScenePreview: React.FC<IScenePreviewProps> = ({
-  image,
-  video,
-  isPortrait,
-  soundActive,
-  vttPath,
-  onScrubberClick,
-  disabled,
-  volume,
-}) => {
-  const videoEl = useRef<HTMLVideoElement>(null);
+export const ScenePreview: React.FC<IScenePreviewProps> = React.memo(
+  ({
+    image,
+    video,
+    isPortrait,
+    soundActive,
+    vttPath,
+    onScrubberClick,
+    disabled,
+    volume,
+  }) => {
+    const videoEl = useRef<HTMLVideoElement>(null);
 
-  useEffect(() => {
-    const el = videoEl.current;
-    if (!el) return;
+    useEffect(() => {
+      const el = videoEl.current;
+      if (!el) return;
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.intersectionRatio > 0) {
-          // Catch is necessary due to DOMException if user hovers before clicking on page
-          el.play()?.catch(() => {});
-        } else {
-          el.pause();
-        }
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio > 0) {
+            // Catch is necessary due to DOMException if user hovers before clicking on page
+            el.play()?.catch(() => {});
+          } else {
+            el.pause();
+          }
+        });
       });
-    });
 
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, []);
 
-  useEffect(() => {
-    if (videoEl?.current?.volume)
-      videoEl.current.volume = soundActive ? (volume ?? 0) / 100 : 0;
-  }, [volume, soundActive]);
+    useEffect(() => {
+      if (videoEl?.current?.volume)
+        videoEl.current.volume = soundActive ? (volume ?? 0) / 100 : 0;
+    }, [volume, soundActive]);
 
-  return (
-    <div className={cx("scene-card-preview", { portrait: isPortrait })}>
-      <img
-        className="scene-card-preview-image"
-        loading="lazy"
-        src={image}
-        alt=""
-      />
-      <video
-        disableRemotePlayback
-        playsInline
-        muted={!soundActive}
-        className="scene-card-preview-video"
-        loop
-        preload="none"
-        ref={videoEl}
-        src={video}
-      />
-      <PreviewScrubber
-        vttPath={vttPath}
-        onClick={onScrubberClick}
-        disabled={disabled}
-      />
-    </div>
-  );
-};
+    return (
+      <div className={cx("scene-card-preview", { portrait: isPortrait })}>
+        <img
+          className="scene-card-preview-image"
+          loading="lazy"
+          src={image}
+          alt=""
+        />
+        <video
+          disableRemotePlayback
+          playsInline
+          muted={!soundActive}
+          className="scene-card-preview-video"
+          loop
+          preload="none"
+          ref={videoEl}
+          src={video}
+        />
+        <PreviewScrubber
+          vttPath={vttPath}
+          onClick={onScrubberClick}
+          disabled={disabled}
+        />
+      </div>
+    );
+  }
+);
 
 interface ISceneCardProps {
   scene: GQL.SlimSceneDataFragment;
@@ -137,9 +139,8 @@ const Description: React.FC<{
   );
 };
 
-const SceneCardPopovers = PatchComponent(
-  "SceneCard.Popovers",
-  (props: ISceneCardProps) => {
+const SceneCardPopovers = React.memo(
+  PatchComponent("SceneCard.Popovers", (props: ISceneCardProps) => {
     const file = useMemo(
       () => (props.scene.files.length > 0 ? props.scene.files[0] : undefined),
       [props.scene]
@@ -326,12 +327,11 @@ const SceneCardPopovers = PatchComponent(
     }
 
     return <>{maybeRenderPopoverButtonGroup()}</>;
-  }
+  })
 );
 
-const SceneCardDetails = PatchComponent(
-  "SceneCard.Details",
-  (props: ISceneCardProps) => {
+const SceneCardDetails = React.memo(
+  PatchComponent("SceneCard.Details", (props: ISceneCardProps) => {
     return (
       <div className="scene-card__details">
         <span className="scene-card__date">{props.scene.date}</span>
@@ -345,12 +345,11 @@ const SceneCardDetails = PatchComponent(
         />
       </div>
     );
-  }
+  })
 );
 
-const SceneCardOverlays = PatchComponent(
-  "SceneCard.Overlays",
-  (props: ISceneCardProps) => {
+const SceneCardOverlays = React.memo(
+  PatchComponent("SceneCard.Overlays", (props: ISceneCardProps) => {
     const ret = useMemo(() => {
       return (
         <StudioOverlay studio={props.scene.studio} disabled={props.selecting} />
@@ -358,16 +357,15 @@ const SceneCardOverlays = PatchComponent(
     }, [props.scene.studio, props.selecting]);
 
     return ret;
-  }
+  })
 );
 
 interface ISceneSpecsOverlay {
   scene: GQL.SlimSceneDataFragment;
 }
 
-export const SceneSpecsOverlay: React.FC<ISceneSpecsOverlay> = PatchComponent(
-  "SceneCard.SceneSpecs",
-  ({ scene }) => {
+export const SceneSpecsOverlay: React.FC<ISceneSpecsOverlay> = React.memo(
+  PatchComponent("SceneCard.SceneSpecs", ({ scene }) => {
     const file = scene.files?.[0];
     if (!file) return null;
     return (
@@ -391,12 +389,11 @@ export const SceneSpecsOverlay: React.FC<ISceneSpecsOverlay> = PatchComponent(
         )}
       </div>
     );
-  }
+  })
 );
 
-const SceneCardImage = PatchComponent(
-  "SceneCard.Image",
-  (props: ISceneCardProps) => {
+const SceneCardImage = React.memo(
+  PatchComponent("SceneCard.Image", (props: ISceneCardProps) => {
     const history = useHistory();
     const { configuration } = useConfigurationContext();
     const cont = configuration?.interface.continuePlaylistDefault ?? false;
@@ -414,18 +411,21 @@ const SceneCardImage = PatchComponent(
       );
     }
 
-    function onScrubberClick(timestamp: number) {
-      if (props.selecting) return;
-      const link = props.queue
-        ? props.queue.makeLink(props.scene.id, {
-            sceneIndex: props.index,
-            continue: cont,
-            start: timestamp,
-          })
-        : `/scenes/${props.scene.id}?t=${timestamp}`;
+    const onScrubberClick = useCallback(
+      (timestamp: number) => {
+        if (props.selecting) return;
+        const link = props.queue
+          ? props.queue.makeLink(props.scene.id, {
+              sceneIndex: props.index,
+              continue: cont,
+              start: timestamp,
+            })
+          : `/scenes/${props.scene.id}?t=${timestamp}`;
 
-      history.push(link);
-    }
+        history.push(link);
+      },
+      [props.selecting, props.queue, props.scene.id, props.index, cont, history]
+    );
 
     function isPortrait() {
       const width = file?.width ? file.width : 0;
@@ -450,68 +450,66 @@ const SceneCardImage = PatchComponent(
         {maybeRenderInteractiveSpeedOverlay()}
       </>
     );
-  }
+  })
 );
 
-const SceneCardComponent = (props: ISceneCardProps) => {
-  const { configuration } = useConfigurationContext();
-
-  const file = useMemo(
-    () => (props.scene.files.length > 0 ? props.scene.files[0] : undefined),
-    [props.scene]
-  );
-
-  function zoomIndex() {
-    if (!props.compact && props.zoomIndex !== undefined) {
-      return `zoom-${props.zoomIndex}`;
-    }
-
-    return "";
-  }
-
-  function filelessClass() {
-    if (!props.scene.files.length) {
-      return "fileless";
-    }
-
-    return "";
-  }
-
-  const cont = configuration?.interface.continuePlaylistDefault ?? false;
-
-  const sceneLink = props.queue
-    ? props.queue.makeLink(props.scene.id, {
-        sceneIndex: props.index,
-        continue: cont,
-      })
-    : `/scenes/${props.scene.id}`;
-
-  return (
-    <GridCard
-      className={`scene-card ${zoomIndex()} ${filelessClass()}`}
-      url={sceneLink}
-      title={objectTitle(props.scene)}
-      width={props.width}
-      linkClassName="scene-card-link"
-      thumbnailSectionClassName="video-section"
-      resumeTime={props.scene.resume_time ?? undefined}
-      duration={file?.duration ?? undefined}
-      interactiveHeatmap={
-        props.scene.interactive_speed
-          ? props.scene.paths.interactive_heatmap ?? undefined
-          : undefined
-      }
-      image={<SceneCardImage {...props} />}
-      overlays={<SceneCardOverlays {...props} />}
-      details={<SceneCardDetails {...props} />}
-      popovers={<SceneCardPopovers {...props} />}
-      selected={props.selected}
-      selecting={props.selecting}
-      onSelectedChanged={props.onSelectedChanged}
-    />
-  );
-};
-
 export const SceneCard = React.memo(
-  PatchComponent("SceneCard", SceneCardComponent)
+  PatchComponent("SceneCard", (props: ISceneCardProps) => {
+    const { configuration } = useConfigurationContext();
+
+    const file = useMemo(
+      () => (props.scene.files.length > 0 ? props.scene.files[0] : undefined),
+      [props.scene]
+    );
+
+    function zoomIndex() {
+      if (!props.compact && props.zoomIndex !== undefined) {
+        return `zoom-${props.zoomIndex}`;
+      }
+
+      return "";
+    }
+
+    function filelessClass() {
+      if (!props.scene.files.length) {
+        return "fileless";
+      }
+
+      return "";
+    }
+
+    const cont = configuration?.interface.continuePlaylistDefault ?? false;
+
+    const sceneLink = props.queue
+      ? props.queue.makeLink(props.scene.id, {
+          sceneIndex: props.index,
+          continue: cont,
+        })
+      : `/scenes/${props.scene.id}`;
+
+    return (
+      <GridCard
+        className={`scene-card ${zoomIndex()} ${filelessClass()}`}
+        url={sceneLink}
+        title={objectTitle(props.scene)}
+        width={props.width}
+        linkClassName="scene-card-link"
+        thumbnailSectionClassName="video-section"
+        resumeTime={props.scene.resume_time ?? undefined}
+        duration={file?.duration ?? undefined}
+        interactiveHeatmap={
+          props.scene.interactive_speed
+            ? (props.scene.paths.interactive_heatmap ?? undefined)
+            : undefined
+        }
+        image={<SceneCardImage {...props} />}
+        overlays={<SceneCardOverlays {...props} />}
+        details={<SceneCardDetails {...props} />}
+        popovers={<SceneCardPopovers {...props} />}
+        selected={props.selected}
+        selecting={props.selecting}
+        onSelectedChanged={props.onSelectedChanged}
+      />
+    );
+  })
 );
